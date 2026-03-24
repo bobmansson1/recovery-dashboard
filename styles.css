@@ -34,7 +34,15 @@
    PAGE / BODY
    ============================================================ */
 body {
-  background: var(--bg);
+  /* Layered gradient blobs give the glass something colourful to blur over.
+     background-attachment: fixed keeps the blobs still while you scroll,
+     so the cards always look "frosted" against the same backdrop. */
+  background:
+    radial-gradient(ellipse 640px 420px at 18% 28%, rgba(77,132,245,0.20) 0%, transparent 70%),
+    radial-gradient(ellipse 520px 360px at 82% 72%, rgba(10,184,144,0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 440px 300px at 65% 8%,  rgba(126,184,255,0.14) 0%, transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
   font-size: 15px;
@@ -52,7 +60,8 @@ body {
   justify-content: space-between;
   margin-bottom: 32px;
   padding-bottom: 22px;
-  border-bottom: 1px solid var(--border);
+  /* Frosted glass divider line under the header */
+  border-bottom: 1px solid rgba(255,255,255,0.55);
 }
 
 .site-header h1 {
@@ -73,8 +82,12 @@ body {
 }
 
 .date-badge {
-  background: var(--card);
-  border: 1px solid var(--border);
+  /* Glass pill — same frosted treatment as the cards */
+  background: rgba(255,255,255,0.60);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.90);
   padding: 7px 18px;
   border-radius: 20px;
   font-size: 13px;
@@ -98,27 +111,33 @@ body {
    CARD BASE — shared styling for every section card
    ============================================================ */
 .card {
-  background: var(--card);
-  border: 1px solid var(--border);
+  /* Glass: semi-transparent white + blur over the colourful background */
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  /* Top edge is brighter white — the "specular highlight" that makes it
+     look like light is catching the glass surface */
+  border: 1px solid rgba(255,255,255,0.72);
   border-radius: var(--radius);
   padding: 26px;
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 4px 24px rgba(77,132,245,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.90);
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-  border-color: rgba(77,132,245,0.55);
-  background: linear-gradient(160deg, #f4f8ff 0%, #ffffff 60%);
-  /* Outer blue glow + soft inset inner highlight — the "lit panel" effect */
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(255,255,255,0.88);
   box-shadow:
     0 8px 40px rgba(77,132,245,0.18),
-    0 2px 12px rgba(77,132,245,0.12),
-    inset 0 1px 0 rgba(77,132,245,0.25);
+    0 2px 12px rgba(77,132,245,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.95);
 }
 
-/* A glowing accent line at the very top edge of the card, revealed on hover */
+/* Glowing accent line at the top of each card, revealed on hover */
 .card::before {
   content: '';
   position: absolute;
@@ -147,7 +166,9 @@ body {
   display: inline-flex;
   align-items: center;
   background: linear-gradient(135deg, var(--accent) 0%, #3068d0 100%);
-  border: none;
+  /* Top specular highlight on the solid button to match the glass theme */
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
   border-radius: var(--radius-sm);
   padding: 10px 20px;
   color: #fff;
@@ -161,16 +182,21 @@ body {
 
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--accent-glow);
+  box-shadow:
+    0 6px 20px var(--accent-glow),
+    inset 0 1px 0 rgba(255,255,255,0.40);
 }
 
 .btn:active { transform: translateY(0); }
 
-/* Navigation pill — feels native to the header, uses the page accent colour */
+/* Navigation pill — glass with a blue tint so it reads as interactive */
 .nav-btn {
   color: var(--accent);
-  background: rgba(77,132,245,0.07);
-  border: 1px solid rgba(77,132,245,0.28);
+  background: rgba(77,132,245,0.10);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(77,132,245,0.30);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80);
   border-radius: 20px;
   padding: 7px 18px;
   font-size: 13px;
@@ -181,10 +207,12 @@ body {
   white-space: nowrap;
 }
 .nav-btn:hover {
-  background: rgba(77,132,245,0.14);
+  background: rgba(77,132,245,0.18);
   border-color: var(--accent);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(77,132,245,0.2);
+  box-shadow:
+    0 4px 14px rgba(77,132,245,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.85);
 }
 
 /* ============================================================
@@ -222,20 +250,27 @@ body {
    SHARED INPUT STYLE — used for text and number inputs
    ============================================================ */
 .text-input {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  /* Frosted glass input — slightly transparent so background colour shows */
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.68);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   color: var(--text);
   font-size: 14px;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
 .text-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(77,132,245,0.15);
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(77,132,245,0.55);
+  box-shadow:
+    0 0 0 3px rgba(77,132,245,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.85);
 }
 
 /* Remove the up/down spinner arrows on number inputs */
@@ -473,16 +508,23 @@ input[type="range"].pain-slider::-webkit-slider-thumb {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  /* Each task row is its own mini frosted tile */
+  background: rgba(255,255,255,0.50);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.80);
   border-radius: var(--radius-sm);
   padding: 11px 14px;
   cursor: pointer;
-  transition: border-color 0.2s, opacity 0.2s;
+  transition: border-color 0.2s, background 0.2s, opacity 0.2s;
   user-select: none;
 }
 
-.todo-item:hover { border-color: var(--border-hl); }
+.todo-item:hover {
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(255,255,255,0.80);
+}
 
 /* Done state: faded out + strikethrough text */
 .todo-item.done { opacity: 0.4; }
