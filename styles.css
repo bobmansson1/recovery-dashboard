@@ -1,0 +1,509 @@
+/* ============================================================
+   CSS CUSTOM PROPERTIES — our colour palette and spacing tokens.
+   Changing a value here changes it everywhere on the page.
+   ============================================================ */
+:root {
+  --bg:          #eef2fb;   /* light blue-tinted white page background */
+  --card:        #ffffff;   /* white card background */
+  --card-hover:  #f5f8ff;   /* card background on hover */
+  --border:      #d5dff5;   /* soft blue-grey border */
+  --border-hl:   #b0c2ea;   /* slightly darker border on hover/focus */
+  --accent:      #4d84f5;   /* main blue accent */
+  --accent-glow: rgba(77,132,245,0.25);
+  --teal:        #0ab890;   /* secondary teal accent (slightly deeper for light bg) */
+  --text:        #0d1a35;   /* dark navy primary text */
+  --text-2:      #4a5f85;   /* medium blue-grey secondary text */
+  --text-3:      #8a9bc0;   /* muted text */
+  --danger:      #e03e3e;   /* red for pain/delete */
+  --warn:        #d97706;   /* amber */
+  --radius:      14px;
+  --radius-sm:   8px;
+  --shadow:      0 4px 20px rgba(77,132,245,0.1);
+}
+
+/* ============================================================
+   RESET — clear browser default margins/padding on everything
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================
+   PAGE / BODY
+   ============================================================ */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 28px 36px 60px;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  /* Gradient text effect: dark navy fading into blue */
+  background: linear-gradient(120deg, #0d1a35 20%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-badge {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-2);
+  letter-spacing: 0.4px;
+}
+
+/* ============================================================
+   MAIN GRID — 2 columns side by side
+   The wellbeing card spans both columns using grid-column.
+   ============================================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.card-wellbeing { grid-column: 1 / -1; } /* spans full width */
+
+/* ============================================================
+   CARD BASE — shared styling for every section card
+   ============================================================ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+  border-color: rgba(77,132,245,0.55);
+  background: linear-gradient(160deg, #f4f8ff 0%, #ffffff 60%);
+  /* Outer blue glow + soft inset inner highlight — the "lit panel" effect */
+  box-shadow:
+    0 8px 40px rgba(77,132,245,0.18),
+    0 2px 12px rgba(77,132,245,0.12),
+    inset 0 1px 0 rgba(77,132,245,0.25);
+}
+
+/* A glowing accent line at the very top edge of the card, revealed on hover */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, var(--accent) 40%, #7eb8ff 60%, transparent 95%);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.card:hover::before { opacity: 1; }
+
+/* Small uppercase label at the top of each card */
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+
+/* ============================================================
+   SHARED BUTTON STYLE
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--accent) 0%, #3068d0 100%);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+
+.btn:active { transform: translateY(0); }
+
+/* Navigation pill — feels native to the header, uses the page accent colour */
+.nav-btn {
+  color: var(--accent);
+  background: rgba(77,132,245,0.07);
+  border: 1px solid rgba(77,132,245,0.28);
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.nav-btn:hover {
+  background: rgba(77,132,245,0.14);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(77,132,245,0.2);
+}
+
+/* ============================================================
+   PAGE LOAD ANIMATIONS
+   Cards and header fade in and slide up on first load,
+   staggered so each section appears just after the last.
+   animation-fill-mode: both keeps them invisible until
+   their delay fires, then leaves them visible afterwards.
+   ============================================================ */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.site-header {
+  animation: fadeSlideUp 0.4s ease-out both 0s;
+}
+
+.dashboard-grid > *:nth-child(1) { animation: fadeSlideUp 0.4s ease-out both 0.08s; }
+.dashboard-grid > *:nth-child(2) { animation: fadeSlideUp 0.4s ease-out both 0.16s; }
+.dashboard-grid > *:nth-child(3) { animation: fadeSlideUp 0.4s ease-out both 0.24s; }
+.dashboard-grid > *:nth-child(4) { animation: fadeSlideUp 0.4s ease-out both 0.32s; }
+.dashboard-grid > *:nth-child(5) { animation: fadeSlideUp 0.4s ease-out both 0.40s; }
+
+/* A small confirmation message that fades out after saving */
+.save-feedback {
+  font-size: 12px;
+  color: var(--teal);
+  margin-top: 8px;
+  min-height: 18px;
+  transition: opacity 0.4s;
+}
+
+/* ============================================================
+   SHARED INPUT STYLE — used for text and number inputs
+   ============================================================ */
+.text-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.text-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(77,132,245,0.15);
+}
+
+/* Remove the up/down spinner arrows on number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* ============================================================
+   SECTION 1 — EXERCISE TRACKER
+   ============================================================ */
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.exercise-label {
+  font-size: 13px;
+  color: var(--text-2);
+  width: 88px;
+  flex-shrink: 0;
+}
+
+.exercise-circles {
+  display: flex;
+  gap: 9px;
+  flex: 1;
+}
+
+/* Each circle is a <button> element styled as a round toggle */
+.circle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border-hl);
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+
+.circle-btn:hover {
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
+/* Filled (completed) state — gradient + subtle glow */
+.circle-btn.filled {
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  border-color: transparent;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.exercise-progress {
+  font-size: 12px;
+  color: var(--text-3);
+  width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Goes teal when all circles are filled */
+.exercise-progress.complete { color: var(--teal); }
+
+/* ============================================================
+   SECTION 2 — READING TRACKER
+   ============================================================ */
+.reading-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.reading-input-row .text-input { flex: 1; }
+
+.reading-total {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.reading-total span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ============================================================
+   SECTION 3 — WELLBEING TRACKER
+   ============================================================ */
+
+/* Two-column layout: sliders on left, chart on right */
+.wellbeing-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.wellbeing-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.slider-label {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* The big number that shows the current slider value */
+.slider-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 28px;
+  text-align: right;
+  line-height: 1;
+}
+
+/* Custom-styled range slider — removes browser defaults */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+
+/* The draggable circle (thumb) on the slider */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: transform 0.12s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+/* Each metric's slider thumb gets its own colour */
+input[type="range"].mood-slider::-webkit-slider-thumb {
+  background: #4d84f5; box-shadow: 0 0 10px rgba(77,132,245,0.5);
+}
+input[type="range"].energy-slider::-webkit-slider-thumb {
+  background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.5);
+}
+input[type="range"].motivation-slider::-webkit-slider-thumb {
+  background: #0fd9a8; box-shadow: 0 0 10px rgba(15,217,168,0.5);
+}
+input[type="range"].pain-slider::-webkit-slider-thumb {
+  background: #f87171; box-shadow: 0 0 10px rgba(248,113,113,0.5);
+}
+
+/* ============================================================
+   SECTION 4 — SLEEP TRACKER
+   ============================================================ */
+.sleep-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.sleep-input-row label {
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.sleep-input-row .text-input { width: 110px; }
+
+/* ============================================================
+   SECTION 5 — TO-DO LIST
+   ============================================================ */
+.todo-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.todo-input-row .text-input { flex: 1; }
+
+.todo-count {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+
+/* Scrollable list with a custom thin scrollbar */
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hl) transparent;
+}
+
+.todo-list::-webkit-scrollbar { width: 4px; }
+.todo-list::-webkit-scrollbar-track { background: transparent; }
+.todo-list::-webkit-scrollbar-thumb { background: var(--border-hl); border-radius: 2px; }
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, opacity 0.2s;
+  user-select: none;
+}
+
+.todo-item:hover { border-color: var(--border-hl); }
+
+/* Done state: faded out + strikethrough text */
+.todo-item.done { opacity: 0.4; }
+.todo-item.done .todo-text { text-decoration: line-through; }
+
+.todo-text {
+  flex: 1;
+  font-size: 14px;
+}
+
+/* The × delete button beside each task */
+.todo-delete {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.todo-delete:hover { color: var(--danger); }

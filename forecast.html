@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weekly Forecast — Bob's Recovery</title>
+
+  <!-- Shared styles used by both pages (variables, reset, body, header, cards) -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Forecast-specific styles (page layout, stat cards, weather, spinner) -->
+  <link rel="stylesheet" href="forecast.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <header class="site-header">
+    <h1>Weekly Forecast</h1>
+    <div class="header-right">
+      <a href="index.html" class="nav-btn">← Back to Dashboard</a>
+      <div class="date-badge" id="headerDate">Loading…</div>
+    </div>
+  </header>
+
+
+  <!-- ============================================================
+       PAGE CONTENT
+       ============================================================ -->
+  <div class="page-stack">
+
+    <!-- Motivational message -->
+    <div class="card" id="messageCard">
+      <div class="card-title">This Week's Mood</div>
+      <span class="message-icon" id="messageIcon">💬</span>
+      <p class="message-text" id="messageText">Loading your weekly summary…</p>
+      <p class="message-week" id="messageWeek"></p>
+    </div>
+
+    <!-- 6 stat cards -->
+    <div class="stats-grid">
+
+      <div class="card stat-card">
+        <div class="stat-label">Avg Mood</div>
+        <div class="stat-value no-data" id="statMood">—</div>
+        <div class="stat-unit">out of 10</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">Avg Energy</div>
+        <div class="stat-value no-data" id="statEnergy">—</div>
+        <div class="stat-unit">out of 10</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">Motivation</div>
+        <div class="stat-value no-data" id="statMotivation">—</div>
+        <div class="stat-unit">out of 10</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">Pain Level</div>
+        <div class="stat-value no-data" id="statPain">—</div>
+        <div class="stat-unit">out of 10</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">Pages Read</div>
+        <div class="stat-value no-data" id="statPages">—</div>
+        <div class="stat-unit">this week</div>
+      </div>
+
+      <div class="card stat-card">
+        <div class="stat-label">Avg Sleep</div>
+        <div class="stat-value no-data" id="statSleep">—</div>
+        <div class="stat-unit">hours / night</div>
+      </div>
+
+    </div>
+
+    <!-- Kalmar weather -->
+    <div class="card" id="weatherCard">
+      <div class="card-title">Weather — Kalmar, Sweden</div>
+      <div class="weather-status" id="weatherStatus">
+        <div class="spinner"></div>
+        <span>Fetching weather data…</span>
+      </div>
+      <div id="weatherContent" style="display:none;">
+        <div class="weather-inner">
+          <div>
+            <span class="current-weather-icon" id="currentIcon"></span>
+            <div class="current-temp" id="currentTemp"></div>
+            <div class="current-condition" id="currentCondition"></div>
+            <div class="current-location">Kalmar, Sweden</div>
+          </div>
+          <div class="forecast-strip" id="forecastStrip"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Abisko weather -->
+    <div class="card" id="abiskoCard">
+      <div class="card-title">Weather — Abisko, Swedish Lapland</div>
+      <div class="weather-status" id="abiskoStatus">
+        <div class="spinner"></div>
+        <span>Fetching weather data…</span>
+      </div>
+      <div id="abiskoContent" style="display:none;">
+        <div class="weather-inner">
+          <div>
+            <span class="current-weather-icon" id="abiskoIcon"></span>
+            <div class="current-temp" id="abiskoTemp"></div>
+            <div class="current-condition" id="abiskoCondition"></div>
+            <div class="current-location">Abisko, Swedish Lapland</div>
+          </div>
+          <div class="forecast-strip" id="abiskoStrip"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .page-stack -->
+
+
+  <!-- Forecast logic -->
+  <script src="forecast.js"></script>
+</body>
+</html>

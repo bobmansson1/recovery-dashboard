@@ -1,0 +1,207 @@
+/* ============================================================
+   FORECAST PAGE — styles unique to forecast.html
+   Shared styles (variables, reset, body, header, card, nav-btn)
+   come from styles.css, which is loaded first.
+   ============================================================ */
+
+/* ============================================================
+   PAGE LOAD ANIMATIONS — staggered, same approach as the
+   dashboard but targeting .page-stack children instead of
+   .dashboard-grid children
+   ============================================================ */
+.page-stack > *:nth-child(1) { animation: fadeSlideUp 0.4s ease-out both 0.08s; }
+.page-stack > *:nth-child(2) { animation: fadeSlideUp 0.4s ease-out both 0.16s; }
+.page-stack > *:nth-child(3) { animation: fadeSlideUp 0.4s ease-out both 0.24s; }
+.page-stack > *:nth-child(4) { animation: fadeSlideUp 0.4s ease-out both 0.32s; }
+.page-stack > *:nth-child(5) { animation: fadeSlideUp 0.4s ease-out both 0.40s; }
+
+/* The forecast page stacks sections vertically instead of in a grid */
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* The card-title on this page sits slightly closer to its content
+   than on the dashboard (18px vs 22px) */
+.card-title { margin-bottom: 18px; }
+
+/* ============================================================
+   MOTIVATIONAL MESSAGE CARD
+   ============================================================ */
+.message-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.message-text {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.message-week {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 8px;
+}
+
+/* ============================================================
+   STAT CARDS GRID — 6 equal columns in one row
+   ============================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 24px 12px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+/* "—" shown when no data — slightly muted */
+.stat-value.no-data {
+  color: var(--text-3);
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.stat-unit {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 6px;
+}
+
+/* ============================================================
+   WEATHER CARD
+   ============================================================ */
+.weather-inner {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* Current conditions — left panel */
+.current-weather-icon {
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.current-temp {
+  font-size: 54px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: var(--text);
+}
+
+.current-temp sup {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0;
+  vertical-align: super;
+  color: var(--text-2);
+}
+
+.current-condition {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-top: 8px;
+}
+
+.current-location {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+/* 7-day forecast strip — right panel */
+.forecast-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.forecast-day {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 6px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.forecast-day:hover { border-color: var(--border-hl); }
+
+.forecast-day-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-2);
+}
+
+.forecast-icon {
+  font-size: 22px;
+  margin: 8px 0;
+  display: block;
+}
+
+.forecast-hi {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.forecast-lo {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* Loading and error states */
+.weather-status {
+  padding: 16px 0;
+  font-size: 14px;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weather-status.error { color: var(--danger); }
+
+/* Simple CSS spinner shown while weather data is loading */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

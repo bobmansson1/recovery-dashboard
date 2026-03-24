@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bob's Recovery Dashboard</title>
+
+  <!-- Chart.js loaded from CDN — this gives us all the chart functionality -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+    onerror="document.getElementById('chartError').style.display='block'"
+  ></script>
+  <!-- Shown only if Chart.js fails to load (e.g. no internet connection) -->
+  <div id="chartError" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin:0 36px; font-size:13px; color:#856404;">
+    ⚠️ Charts could not load — you may be offline. All tracking inputs still work and your data is safe.
+  </div>
+
+  <!-- All the page styles live in this separate file -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       HEADER — title + today's date
+       ============================================================ -->
+  <header class="site-header">
+    <h1>Bob's Recovery Dashboard</h1>
+    <div class="header-right">
+      <a href="forecast.html" class="nav-btn">Weekly Forecast</a>
+      <div class="date-badge" id="headerDate">Loading…</div>
+    </div>
+  </header>
+
+
+  <!-- ============================================================
+       MAIN GRID — all five sections
+       ============================================================ -->
+  <main class="dashboard-grid">
+
+    <!-- ── SECTION 1: EXERCISE TRACKER ──────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Exercise Tracker</div>
+      <!-- JavaScript will build 4 rows of circles inside here -->
+      <div class="exercise-list" id="exerciseList"></div>
+      <!-- Chart showing total completed circles per day over 14 days -->
+      <canvas id="exerciseChart" height="110" style="margin-top: 24px;"></canvas>
+    </section>
+
+    <!-- ── SECTION 2: READING TRACKER ───────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Reading Tracker</div>
+      <div class="reading-input-row">
+        <input
+          class="text-input"
+          type="number"
+          id="readingInput"
+          placeholder="Pages read this session"
+          min="1"
+        />
+        <button class="btn" onclick="addReading()">Add Pages</button>
+      </div>
+      <canvas id="readingChart" height="120"></canvas>
+      <p class="reading-total">All-time total: <span id="readingTotal">0</span> pages</p>
+    </section>
+
+    <!-- ── SECTION 3: WELLBEING TRACKER (full width) ────────────── -->
+    <section class="card card-wellbeing">
+      <div class="card-title">Wellbeing Tracker</div>
+      <div class="wellbeing-layout">
+
+        <!-- Left: the four rating sliders -->
+        <div class="wellbeing-inputs">
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Mood</span>
+              <span class="slider-value" id="moodVal">5</span>
+            </div>
+            <input type="range" class="mood-slider" id="moodSlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('moodVal').textContent = this.value" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Energy</span>
+              <span class="slider-value" id="energyVal">5</span>
+            </div>
+            <input type="range" class="energy-slider" id="energySlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('energyVal').textContent = this.value" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Motivation</span>
+              <span class="slider-value" id="motivationVal">5</span>
+            </div>
+            <input type="range" class="motivation-slider" id="motivationSlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('motivationVal').textContent = this.value" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Pain Level</span>
+              <span class="slider-value" id="painVal">5</span>
+            </div>
+            <input type="range" class="pain-slider" id="painSlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('painVal').textContent = this.value" />
+          </div>
+
+          <button class="btn" onclick="saveWellbeing()">Save Today's Ratings</button>
+          <p class="save-feedback" id="wellbeingFeedback"></p>
+
+        </div>
+
+        <!-- Right: the 14-day chart -->
+        <div>
+          <canvas id="wellbeingChart"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── SECTION 4: SLEEP TRACKER ─────────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Sleep Tracker</div>
+      <div class="sleep-input-row">
+        <label for="sleepInput">Hours slept last night:</label>
+        <input
+          class="text-input"
+          type="number"
+          id="sleepInput"
+          placeholder="e.g. 7.5"
+          min="0" max="24" step="0.25"
+        />
+        <button class="btn" onclick="saveSleep()">Save</button>
+      </div>
+      <canvas id="sleepChart" height="150"></canvas>
+      <p class="save-feedback" id="sleepFeedback"></p>
+    </section>
+
+    <!-- ── SECTION 5: TO-DO LIST ─────────────────────────────────── -->
+    <section class="card">
+      <div class="card-title">To-Do List</div>
+      <div class="todo-input-row">
+        <input
+          class="text-input"
+          type="text"
+          id="todoInput"
+          placeholder="Add a task…"
+          onkeydown="if (event.key === 'Enter') addTodo()"
+        />
+        <button class="btn" onclick="addTodo()">Add</button>
+      </div>
+      <p class="todo-count" id="todoCount">0 tasks remaining</p>
+      <!-- JavaScript builds the task items inside here -->
+      <div class="todo-list" id="todoList"></div>
+    </section>
+
+  </main>
+
+  <!-- All the JavaScript logic lives in this separate file -->
+  <script src="app.js"></script>
+</body>
+</html>
