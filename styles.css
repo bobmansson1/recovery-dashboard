@@ -507,3 +507,37 @@ input[type="range"].pain-slider::-webkit-slider-thumb {
 }
 
 .todo-delete:hover { color: var(--danger); }
+
+/* ============================================================
+   AUTHENTICATION
+   ============================================================ */
+
+/* Input sections are hidden by default; visible only when owner is logged in.
+   All affected elements use display:flex so that's what we restore. */
+.owner-only { display: none; }
+body.owner .owner-only { display: flex; }
+
+/* Subtle hint for visitors — hidden once the owner logs in */
+.edit-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+  margin-bottom: 8px;
+}
+body.owner .edit-hint { display: none; }
+
+/* Avatar + sign-out wrapper in the header */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Small circular profile picture */
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border-hl);
+  object-fit: cover;
+}

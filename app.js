@@ -62,6 +62,53 @@ if (typeof Chart !== 'undefined') {
 
 
 /* ──────────────────────────────────────────────────────────────
+   AUTHENTICATION
+
+   signIn()       — redirects to Google, comes back to this page
+   signOut()      — clears the session immediately
+   updateAuthUI() — called on every auth state change; toggles the
+                    "owner" class on <body> which CSS uses to
+                    show/hide all input sections at once
+   ────────────────────────────────────────────────────────────── */
+
+async function signIn() {
+  await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  updateAuthUI(null);
+}
+
+function updateAuthUI(session) {
+  const isOwner  = !!session;
+  // Adding/removing "owner" on <body> drives all the CSS show/hide rules
+  document.body.classList.toggle('owner', isOwner);
+
+  const loginBtn = document.getElementById('loginBtn');
+  const userInfo = document.getElementById('userInfo');
+  if (!loginBtn || !userInfo) return;
+
+  if (isOwner) {
+    loginBtn.style.display = 'none';
+    userInfo.style.display = 'flex';
+    const avatar    = document.getElementById('userAvatar');
+    const avatarUrl = session.user.user_metadata?.avatar_url;
+    if (avatar && avatarUrl) avatar.src = avatarUrl;
+  } else {
+    loginBtn.style.display = ''; // revert to visible
+    userInfo.style.display = 'none';
+  }
+
+  // Re-render exercises so circle buttons gain/lose click handlers
+  renderExercises().catch(() => {});
+}
+
+
+/* ──────────────────────────────────────────────────────────────
    OFFLINE / CONNECTION CHECK
 
    On page load we try one lightweight query to Supabase.
@@ -242,7 +289,13 @@ async function renderExercises() {
         btn.style.boxShadow   = `0 0 10px hsla(${hue}, 65%, 46%, 0.45)`;
       }
 
-      btn.addEventListener('click', () => toggleExercise(exIdx, circleIdx));
+      // Only make circles clickable when the owner is logged in
+      if (document.body.classList.contains('owner')) {
+        btn.addEventListener('click', () => toggleExercise(exIdx, circleIdx));
+      } else {
+        btn.style.cursor  = 'default';
+        btn.style.opacity = '0.55';
+      }
       circlesWrap.appendChild(btn);
     });
     row.appendChild(circlesWrap);
@@ -631,6 +684,17 @@ async function renderTodos() {
     showOfflineBanner();
     return; // Stop here — no point trying to load data if offline
   }
+
+  // Check whether Bob is already logged in from a previous visit.
+  // Supabase stores the session in localStorage automatically.
+  const { data: { session } } = await db.auth.getSession();
+  updateAuthUI(session);
+
+  // Keep the UI in sync if auth state changes while the page is open
+  // (e.g. after the Google redirect comes back, or after sign-out)
+  db.auth.onAuthStateChange((_event, newSession) => {
+    updateAuthUI(newSession);
+  });
 
   try { await renderExercises();                               } catch (e) { console.error('Exercises failed:', e); }
   try { await renderReading();                                 } catch (e) { console.error('Reading failed:',   e); }

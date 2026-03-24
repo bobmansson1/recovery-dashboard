@@ -10,6 +10,46 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
 /* ──────────────────────────────────────────────────────────────
+   AUTHENTICATION
+   Same pattern as app.js — keeps the login button consistent
+   across both pages. Forecast has no write operations so there
+   is nothing to show/hide beyond the auth button itself.
+   ────────────────────────────────────────────────────────────── */
+
+async function signIn() {
+  await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  updateAuthUI(null);
+}
+
+function updateAuthUI(session) {
+  const isOwner  = !!session;
+  document.body.classList.toggle('owner', isOwner);
+
+  const loginBtn = document.getElementById('loginBtn');
+  const userInfo = document.getElementById('userInfo');
+  if (!loginBtn || !userInfo) return;
+
+  if (isOwner) {
+    loginBtn.style.display = 'none';
+    userInfo.style.display = 'flex';
+    const avatar    = document.getElementById('userAvatar');
+    const avatarUrl = session.user.user_metadata?.avatar_url;
+    if (avatar && avatarUrl) avatar.src = avatarUrl;
+  } else {
+    loginBtn.style.display = '';
+    userInfo.style.display = 'none';
+  }
+}
+
+
+/* ──────────────────────────────────────────────────────────────
    UTILITY HELPERS
    ────────────────────────────────────────────────────────────── */
 
@@ -336,6 +376,14 @@ function renderWeatherAbisko(data) {
     try { fetchWeatherAbisko(); } catch (e) { console.error('Abisko weather failed:', e); }
     return;
   }
+
+  // Check and display current login state
+  const { data: { session } } = await db.auth.getSession();
+  updateAuthUI(session);
+
+  db.auth.onAuthStateChange((_event, newSession) => {
+    updateAuthUI(newSession);
+  });
 
   // Each section is independent — a failure in one won't break the others
   try { await renderSummary();   } catch (e) { console.error('Summary failed:', e); }
