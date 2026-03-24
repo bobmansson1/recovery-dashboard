@@ -517,6 +517,12 @@ input[type="range"].pain-slider::-webkit-slider-thumb {
 .owner-only { display: none; }
 body.owner .owner-only { display: flex; }
 
+/* When logged out the sliders column is hidden, so let the chart fill the
+   full width instead of being pushed into the narrow 320px column. */
+body:not(.owner) .wellbeing-layout {
+  grid-template-columns: 1fr;
+}
+
 /* Subtle hint for visitors — hidden once the owner logs in */
 .edit-hint {
   font-size: 12px;
