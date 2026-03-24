@@ -46,14 +46,14 @@
 body::before {
   content: '';
   position: fixed;
-  top: -15%;
-  left: -12%;
-  width: 65%;
-  height: 65%;
-  background: radial-gradient(ellipse, rgba(77,132,245,0.26) 0%, transparent 68%);
+  top: -20%;
+  left: -15%;
+  width: 75%;
+  height: 75%;
+  background: radial-gradient(ellipse, rgba(77,132,245,0.55) 0%, transparent 65%);
   border-radius: 50%;
-  filter: blur(48px);
-  animation: blobDrift1 20s ease-in-out infinite alternate;
+  filter: blur(28px);
+  animation: blobDrift1 18s ease-in-out infinite alternate;
   z-index: -1;
   pointer-events: none;
 }
@@ -61,36 +61,36 @@ body::before {
 body::after {
   content: '';
   position: fixed;
-  bottom: -14%;
-  right: -12%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(ellipse, rgba(10,184,144,0.22) 0%, transparent 68%);
+  bottom: -18%;
+  right: -15%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(ellipse, rgba(10,184,144,0.48) 0%, transparent 65%);
   border-radius: 50%;
-  filter: blur(48px);
-  animation: blobDrift2 26s ease-in-out infinite alternate;
+  filter: blur(28px);
+  animation: blobDrift2 24s ease-in-out infinite alternate;
   z-index: -1;
   pointer-events: none;
 }
 
-/* Blob 1 drifts down-right then back — slow and smooth */
+/* Blob 1 sweeps across roughly a third of the screen */
 @keyframes blobDrift1 {
-  0%   { transform: translate(0,    0)    scale(1);    }
-  50%  { transform: translate(6%,   10%)  scale(1.08); }
-  100% { transform: translate(14%,  5%)   scale(0.95); }
+  0%   { transform: translate(0,     0)    scale(1);    }
+  50%  { transform: translate(18%,   22%)  scale(1.12); }
+  100% { transform: translate(32%,   10%)  scale(0.92); }
 }
 
-/* Blob 2 drifts up-left then back — different timing so they never sync */
+/* Blob 2 sweeps in the opposite direction — different speed so they never sync */
 @keyframes blobDrift2 {
-  0%   { transform: translate(0,    0)    scale(1);    }
-  50%  { transform: translate(-8%,  -6%)  scale(1.10); }
-  100% { transform: translate(-4%,  -13%) scale(0.96); }
+  0%   { transform: translate(0,     0)    scale(1);    }
+  50%  { transform: translate(-20%,  -14%) scale(1.14); }
+  100% { transform: translate(-10%,  -28%) scale(0.94); }
 }
 
 body {
   /* A third subtle highlight blob baked into the background — no JS, no extra elements */
   background:
-    radial-gradient(ellipse 380px 260px at 64% 6%, rgba(126,184,255,0.13) 0%, transparent 70%),
+    radial-gradient(ellipse 420px 300px at 64% 6%, rgba(126,184,255,0.35) 0%, transparent 70%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
