@@ -355,21 +355,31 @@ async function addReading() {
 async function renderReading() {
   const days = getLastNDays(14);
 
-  // Fetch the last 14 days for the chart
-  const { data: chartData } = await db
-    .from('reading')
-    .select('date, pages_read')
-    .in('date', days);
+  // Fetch ALL reading history so we can compute a running cumulative total.
+  // The chart shows a line that only ever goes up — days with no reading
+  // stay flat at the previous day's total rather than dropping to zero.
+  const { data: allData } = await db.from('reading').select('date, pages_read');
 
-  const log = {};
-  if (chartData) chartData.forEach(r => { log[r.date] = r.pages_read; });
+  const allLog = {};
+  if (allData) allData.forEach(r => { allLog[r.date] = r.pages_read; });
 
-  const values = days.map(d => log[d] || 0);
+  // Sum everything before the 14-day window as the starting baseline
+  const windowStart = days[0];
+  const baseline = Object.entries(allLog)
+    .filter(([d]) => d < windowStart)
+    .reduce((sum, [, n]) => sum + n, 0);
+
+  // Walk through each visible day, carrying the running total forward
+  let running = baseline;
+  const values = days.map(d => {
+    running += allLog[d] || 0;
+    return running;
+  });
+
   const labels = days.map(shortLabel);
 
-  // All-time total needs all rows, not just the last 14 days
-  const { data: allData } = await db.from('reading').select('pages_read');
-  const total = allData ? allData.reduce((sum, r) => sum + r.pages_read, 0) : 0;
+  // All-time total is the final running value
+  const total = Object.values(allLog).reduce((sum, n) => sum + n, 0);
   document.getElementById('readingTotal').textContent = total.toLocaleString();
 
   if (readingChartInst) readingChartInst.destroy();
@@ -380,7 +390,7 @@ async function renderReading() {
     data: {
       labels,
       datasets: [{
-        label: 'Pages Read',
+        label: 'Total Pages',
         data: values,
         borderColor: '#4d84f5',
         backgroundColor: 'rgba(77,132,245,0.08)',
