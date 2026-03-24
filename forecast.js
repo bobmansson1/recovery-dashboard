@@ -1,10 +1,19 @@
 /* ──────────────────────────────────────────────────────────────
+   SUPABASE CONNECTION
+   ────────────────────────────────────────────────────────────── */
+
+const SUPABASE_URL = 'https://zamwktaebxpkbldrbseh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbXdrdGFlYnhwa2JsZHJic2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjAzNDksImV4cCI6MjA4OTkzNjM0OX0.k0PXIoofcgvQCmHie_bChux6VexPsDqNt5T8_tvvDOI';
+
+const { createClient } = window.supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+/* ──────────────────────────────────────────────────────────────
    UTILITY HELPERS
    ────────────────────────────────────────────────────────────── */
 
 // Converts a Date object to "YYYY-MM-DD" using LOCAL time, not UTC.
-// toISOString() returns UTC, which in Sweden runs 1-2 hours behind local
-// time and would cause dates to roll over before midnight.
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -13,23 +22,11 @@ function getToday() {
   return toDateStr(new Date());
 }
 
-// Load from localStorage
-function load(key, defaultValue) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw !== null ? JSON.parse(raw) : defaultValue;
-  } catch (e) {
-    return defaultValue;
-  }
-}
-
-// Returns an array of date strings from Monday of the current week up to today.
+// Returns date strings from Monday of the current week up to today.
 // e.g. if today is Wednesday: ["2025-03-24", "2025-03-25", "2025-03-26"]
 function getCurrentWeekDates() {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  // Calculate how many days back Monday was
-  // If today is Sunday (0), Monday was 6 days ago
+  const today      = new Date();
+  const dayOfWeek  = today.getDay(); // 0 = Sun, 1 = Mon, …
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const dates = [];
   for (let i = daysToMonday; i >= 0; i--) {
@@ -46,41 +43,47 @@ function shortDayName(dateStr) {
   return d.toLocaleDateString('en-GB', { weekday: 'short' });
 }
 
-// Formats a date range as "24 Mar – 30 Mar" for the message card subtitle
+// Formats a date range as "24 Mar – 30 Mar"
 function formatWeekRange(dates) {
   if (!dates.length) return '';
   const fmt = s => new Date(s + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
 }
 
-// Calculates the average of an array of numbers, ignoring null/undefined
+// Average of an array, ignoring null/undefined values
 function avg(arr) {
   const valid = arr.filter(v => v !== null && v !== undefined);
   if (!valid.length) return null;
   return valid.reduce((s, v) => s + v, 0) / valid.length;
 }
 
+// Shows/hides the offline banner
+function showOfflineBanner() {
+  const banner = document.getElementById('offlineBanner');
+  if (banner) banner.style.display = 'block';
+}
+
 
 /* ──────────────────────────────────────────────────────────────
    WMO WEATHER CODE HELPERS
-   Maps numeric weather codes from Open-Meteo to emoji + label.
+   Maps numeric codes from Open-Meteo to emoji + label.
    ────────────────────────────────────────────────────────────── */
 
 function wmoToInfo(code) {
-  if (code === 0)              return { icon: '☀️',  label: 'Clear sky' };
-  if (code === 1)              return { icon: '🌤️', label: 'Mainly clear' };
-  if (code === 2)              return { icon: '⛅',  label: 'Partly cloudy' };
-  if (code === 3)              return { icon: '☁️',  label: 'Overcast' };
-  if (code <= 48)              return { icon: '🌫️', label: 'Fog' };
-  if (code <= 55)              return { icon: '🌦️', label: 'Drizzle' };
-  if (code <= 65)              return { icon: '🌧️', label: 'Rain' };
-  if (code <= 67)              return { icon: '🌧️', label: 'Freezing rain' };
-  if (code <= 75)              return { icon: '🌨️', label: 'Snow' };
-  if (code <= 77)              return { icon: '🌨️', label: 'Snow grains' };
-  if (code <= 82)              return { icon: '🌦️', label: 'Showers' };
-  if (code <= 86)              return { icon: '🌨️', label: 'Snow showers' };
-  if (code === 95)             return { icon: '⛈️',  label: 'Thunderstorm' };
-  if (code >= 96)              return { icon: '⛈️',  label: 'Thunderstorm' };
+  if (code === 0)  return { icon: '☀️',  label: 'Clear sky' };
+  if (code === 1)  return { icon: '🌤️', label: 'Mainly clear' };
+  if (code === 2)  return { icon: '⛅',  label: 'Partly cloudy' };
+  if (code === 3)  return { icon: '☁️',  label: 'Overcast' };
+  if (code <= 48)  return { icon: '🌫️', label: 'Fog' };
+  if (code <= 55)  return { icon: '🌦️', label: 'Drizzle' };
+  if (code <= 65)  return { icon: '🌧️', label: 'Rain' };
+  if (code <= 67)  return { icon: '🌧️', label: 'Freezing rain' };
+  if (code <= 75)  return { icon: '🌨️', label: 'Snow' };
+  if (code <= 77)  return { icon: '🌨️', label: 'Snow grains' };
+  if (code <= 82)  return { icon: '🌦️', label: 'Showers' };
+  if (code <= 86)  return { icon: '🌨️', label: 'Snow showers' };
+  if (code === 95) return { icon: '⛈️',  label: 'Thunderstorm' };
+  if (code >= 96)  return { icon: '⛈️',  label: 'Thunderstorm' };
   return { icon: '🌡️', label: 'Unknown' };
 }
 
@@ -88,30 +91,41 @@ function wmoToInfo(code) {
 /* ──────────────────────────────────────────────────────────────
    SECTION 1 — WEEKLY RECOVERY SUMMARY
 
-   Reads the same localStorage keys as the dashboard:
-     rd_wellbeing_log  → mood, energy, motivation, pain averages
-     rd_reading_log    → total pages this week
-     rd_sleep_log      → average hours slept this week
+   Reads from the same Supabase tables as the dashboard:
+     wellbeing  → mood, energy, motivation, pain averages
+     reading    → total pages this week
+     sleep      → average hours slept this week
 
-   Shows "—" for any metric with no data yet.
+   All three tables are queried in parallel using Promise.all
+   so the page loads as fast as possible.
    ────────────────────────────────────────────────────────────── */
 
-function calcWeeklyStats() {
-  const weekDates    = getCurrentWeekDates();
-  const wellbeing    = load('rd_wellbeing_log', {});
-  const readingLog   = load('rd_reading_log',   {});
-  const sleepLog     = load('rd_sleep_log',     {});
+async function calcWeeklyStats() {
+  const weekDates = getCurrentWeekDates();
 
-  // Pull each wellbeing metric for each day that has data
+  // Fire all three queries at the same time rather than one after another
+  const [wellbeingResult, readingResult, sleepResult] = await Promise.all([
+    db.from('wellbeing').select('*').in('date', weekDates),
+    db.from('reading').select('date, pages_read').in('date', weekDates),
+    db.from('sleep').select('date, hours').in('date', weekDates)
+  ]);
+
+  // Turn each array of rows into a lookup object keyed by date
+  const wellbeing = {};
+  (wellbeingResult.data || []).forEach(r => { wellbeing[r.date] = r; });
+
+  const readingLog = {};
+  (readingResult.data || []).forEach(r => { readingLog[r.date] = r.pages_read; });
+
+  const sleepLog = {};
+  (sleepResult.data || []).forEach(r => { sleepLog[r.date] = parseFloat(r.hours); });
+
   const moods       = weekDates.map(d => wellbeing[d] ? wellbeing[d].mood       : null);
   const energies    = weekDates.map(d => wellbeing[d] ? wellbeing[d].energy     : null);
   const motivations = weekDates.map(d => wellbeing[d] ? wellbeing[d].motivation : null);
   const pains       = weekDates.map(d => wellbeing[d] ? wellbeing[d].pain       : null);
 
-  // Total pages: sum all days in the week that have entries
-  const pages = weekDates.reduce((sum, d) => sum + (readingLog[d] || 0), 0);
-
-  // Average sleep
+  const pages       = weekDates.reduce((sum, d) => sum + (readingLog[d] || 0), 0);
   const sleepValues = weekDates.map(d => sleepLog[d] !== undefined ? sleepLog[d] : null);
 
   return {
@@ -119,7 +133,7 @@ function calcWeeklyStats() {
     energy:     avg(energies),
     motivation: avg(motivations),
     pain:       avg(pains),
-    pages:      pages,
+    pages,
     sleep:      avg(sleepValues),
     weekDates
   };
@@ -150,7 +164,7 @@ function getMotivationalMessage(avgMood) {
   };
 }
 
-// Sets a stat card's value, removing the "no-data" style if there is real data
+// Updates a stat card element — shows "—" in muted style if no data
 function setStatCard(id, value, decimals = 1) {
   const el = document.getElementById(id);
   if (value === null) {
@@ -162,22 +176,22 @@ function setStatCard(id, value, decimals = 1) {
   }
 }
 
-function renderSummary() {
-  const stats = calcWeeklyStats();
+async function renderSummary() {
+  const stats = await calcWeeklyStats();
 
-  // Motivational message
+  // Motivational message card
   const msg = getMotivationalMessage(stats.mood);
   document.getElementById('messageIcon').textContent = msg.icon;
   document.getElementById('messageText').textContent = msg.text;
   document.getElementById('messageWeek').textContent = `Week of ${formatWeekRange(stats.weekDates)}`;
 
-  // Stat cards
+  // Six stat cards
   setStatCard('statMood',       stats.mood);
   setStatCard('statEnergy',     stats.energy);
   setStatCard('statMotivation', stats.motivation);
   setStatCard('statPain',       stats.pain);
 
-  // Pages: show 0 rather than — if there's no data (zero is a valid meaningful answer)
+  // Pages: always show a number (0 is meaningful, unlike the other metrics)
   const pagesEl = document.getElementById('statPages');
   pagesEl.textContent = stats.pages;
   pagesEl.classList.remove('no-data');
@@ -188,12 +202,9 @@ function renderSummary() {
 
 /* ──────────────────────────────────────────────────────────────
    SECTION 2 — WEATHER FORECAST
-
    Uses the Open-Meteo free API (no key required).
-   Kalmar, Sweden: 56.6616°N, 16.3566°E
-
-   If the fetch fails for any reason, a friendly error message
-   is shown — the rest of the page is unaffected.
+   Kalmar and Abisko fetch independently — one failing won't
+   affect the other.
    ────────────────────────────────────────────────────────────── */
 
 async function fetchWeather() {
@@ -208,37 +219,32 @@ async function fetchWeather() {
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    renderWeather(data);
+    renderWeather(await response.json());
   } catch (err) {
-    console.warn('Weather fetch failed:', err);
+    console.warn('Kalmar weather fetch failed:', err);
     showWeatherError();
   }
 }
 
 function renderWeather(data) {
-  const current = data.current_weather;
-  const daily   = data.daily;
-
-  // Fill in current conditions
+  const current     = data.current_weather;
+  const daily       = data.daily;
   const currentInfo = wmoToInfo(current.weathercode);
+
   document.getElementById('currentIcon').textContent      = currentInfo.icon;
   document.getElementById('currentTemp').innerHTML        = `${Math.round(current.temperature)}<sup>°C</sup>`;
   document.getElementById('currentCondition').textContent = currentInfo.label;
 
-  // Build the 7-day forecast strip
   const strip = document.getElementById('forecastStrip');
   strip.innerHTML = '';
   daily.time.forEach((dateStr, i) => {
-    const info = wmoToInfo(daily.weathercode[i]);
-    const hi   = Math.round(daily.temperature_2m_max[i]);
-    const lo   = Math.round(daily.temperature_2m_min[i]);
-    const name = shortDayName(dateStr);
-
+    const info  = wmoToInfo(daily.weathercode[i]);
+    const hi    = Math.round(daily.temperature_2m_max[i]);
+    const lo    = Math.round(daily.temperature_2m_min[i]);
     const dayEl = document.createElement('div');
     dayEl.className = 'forecast-day';
     dayEl.innerHTML = `
-      <div class="forecast-day-name">${name}</div>
+      <div class="forecast-day-name">${shortDayName(dateStr)}</div>
       <span class="forecast-icon">${info.icon}</span>
       <div class="forecast-hi">${hi}°</div>
       <div class="forecast-lo">${lo}°</div>
@@ -246,7 +252,6 @@ function renderWeather(data) {
     strip.appendChild(dayEl);
   });
 
-  // Hide loading indicator and show the real content
   document.getElementById('weatherStatus').style.display  = 'none';
   document.getElementById('weatherContent').style.display = 'block';
 }
@@ -256,8 +261,6 @@ function showWeatherError() {
   status.classList.add('error');
   status.innerHTML = 'Weather data is unavailable right now — try refreshing the page.';
 }
-
-/* ── ABISKO WEATHER — loads independently from Kalmar ── */
 
 async function fetchWeatherAbisko() {
   const url =
@@ -271,8 +274,7 @@ async function fetchWeatherAbisko() {
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    renderWeatherAbisko(data);
+    renderWeatherAbisko(await response.json());
   } catch (err) {
     console.warn('Abisko weather fetch failed:', err);
     const status = document.getElementById('abiskoStatus');
@@ -282,10 +284,10 @@ async function fetchWeatherAbisko() {
 }
 
 function renderWeatherAbisko(data) {
-  const current = data.current_weather;
-  const daily   = data.daily;
-
+  const current     = data.current_weather;
+  const daily       = data.daily;
   const currentInfo = wmoToInfo(current.weathercode);
+
   document.getElementById('abiskoIcon').textContent      = currentInfo.icon;
   document.getElementById('abiskoTemp').innerHTML        = `${Math.round(current.temperature)}<sup>°C</sup>`;
   document.getElementById('abiskoCondition').textContent = currentInfo.label;
@@ -293,15 +295,13 @@ function renderWeatherAbisko(data) {
   const strip = document.getElementById('abiskoStrip');
   strip.innerHTML = '';
   daily.time.forEach((dateStr, i) => {
-    const info = wmoToInfo(daily.weathercode[i]);
-    const hi   = Math.round(daily.temperature_2m_max[i]);
-    const lo   = Math.round(daily.temperature_2m_min[i]);
-    const name = shortDayName(dateStr);
-
+    const info  = wmoToInfo(daily.weathercode[i]);
+    const hi    = Math.round(daily.temperature_2m_max[i]);
+    const lo    = Math.round(daily.temperature_2m_min[i]);
     const dayEl = document.createElement('div');
     dayEl.className = 'forecast-day';
     dayEl.innerHTML = `
-      <div class="forecast-day-name">${name}</div>
+      <div class="forecast-day-name">${shortDayName(dateStr)}</div>
       <span class="forecast-icon">${info.icon}</span>
       <div class="forecast-hi">${hi}°</div>
       <div class="forecast-lo">${lo}°</div>
@@ -317,7 +317,7 @@ function renderWeatherAbisko(data) {
 /* ──────────────────────────────────────────────────────────────
    INITIALISATION
    ────────────────────────────────────────────────────────────── */
-(function init() {
+(async function init() {
 
   // Header date badge
   const now = new Date();
@@ -325,9 +325,21 @@ function renderWeatherAbisko(data) {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  // Each section is independent — a failure in one won't break the other
-  try { renderSummary();       } catch (e) { console.error('Summary failed:', e); }
-  try { fetchWeather();        } catch (e) { console.error('Kalmar weather failed:', e); }
-  try { fetchWeatherAbisko();  } catch (e) { console.error('Abisko weather failed:', e); }
+  // Check Supabase connection before trying to load summary data
+  try {
+    const { error } = await db.from('wellbeing').select('id').limit(1);
+    if (error) throw error;
+  } catch {
+    showOfflineBanner();
+    // Weather doesn't use Supabase — still try to load it
+    try { fetchWeather();       } catch (e) { console.error('Kalmar weather failed:', e); }
+    try { fetchWeatherAbisko(); } catch (e) { console.error('Abisko weather failed:', e); }
+    return;
+  }
+
+  // Each section is independent — a failure in one won't break the others
+  try { await renderSummary();   } catch (e) { console.error('Summary failed:', e); }
+  try { fetchWeather();          } catch (e) { console.error('Kalmar weather failed:', e); }
+  try { fetchWeatherAbisko();    } catch (e) { console.error('Abisko weather failed:', e); }
 
 })();

@@ -24,6 +24,11 @@
   </header>
 
 
+  <!-- Shown if the database cannot be reached -->
+  <div id="offlineBanner" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin-bottom:24px; font-size:13px; color:#856404;">
+    ⚠️ Could not connect to the database. Check your internet connection and refresh the page.
+  </div>
+
   <!-- ============================================================
        PAGE CONTENT
        ============================================================ -->
@@ -121,6 +126,8 @@
   </div><!-- end .page-stack -->
 
 
+  <!-- Supabase client library — must load before forecast.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Forecast logic -->
   <script src="forecast.js"></script>
 </body>
