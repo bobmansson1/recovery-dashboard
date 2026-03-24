@@ -33,14 +33,64 @@
 /* ============================================================
    PAGE / BODY
    ============================================================ */
+/* ============================================================
+   ANIMATED BACKGROUND BLOBS
+   body::before and body::after are two large softly-blurred
+   colour orbs. They drift on independent paths so the backdrop
+   always looks gently alive — the same technique Apple uses
+   behind visionOS glass panels.
+   position: fixed keeps them anchored to the viewport so they
+   don't scroll away with the page content.
+   pointer-events: none stops them intercepting any clicks.
+   ============================================================ */
+body::before {
+  content: '';
+  position: fixed;
+  top: -15%;
+  left: -12%;
+  width: 65%;
+  height: 65%;
+  background: radial-gradient(ellipse, rgba(77,132,245,0.26) 0%, transparent 68%);
+  border-radius: 50%;
+  filter: blur(48px);
+  animation: blobDrift1 20s ease-in-out infinite alternate;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -14%;
+  right: -12%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(10,184,144,0.22) 0%, transparent 68%);
+  border-radius: 50%;
+  filter: blur(48px);
+  animation: blobDrift2 26s ease-in-out infinite alternate;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Blob 1 drifts down-right then back — slow and smooth */
+@keyframes blobDrift1 {
+  0%   { transform: translate(0,    0)    scale(1);    }
+  50%  { transform: translate(6%,   10%)  scale(1.08); }
+  100% { transform: translate(14%,  5%)   scale(0.95); }
+}
+
+/* Blob 2 drifts up-left then back — different timing so they never sync */
+@keyframes blobDrift2 {
+  0%   { transform: translate(0,    0)    scale(1);    }
+  50%  { transform: translate(-8%,  -6%)  scale(1.10); }
+  100% { transform: translate(-4%,  -13%) scale(0.96); }
+}
+
 body {
-  /* Layered gradient blobs give the glass something colourful to blur over.
-     background-attachment: fixed keeps the blobs still while you scroll,
-     so the cards always look "frosted" against the same backdrop. */
+  /* A third subtle highlight blob baked into the background — no JS, no extra elements */
   background:
-    radial-gradient(ellipse 640px 420px at 18% 28%, rgba(77,132,245,0.20) 0%, transparent 70%),
-    radial-gradient(ellipse 520px 360px at 82% 72%, rgba(10,184,144,0.16) 0%, transparent 70%),
-    radial-gradient(ellipse 440px 300px at 65% 8%,  rgba(126,184,255,0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 380px 260px at 64% 6%, rgba(126,184,255,0.13) 0%, transparent 70%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
