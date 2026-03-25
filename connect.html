@@ -938,7 +938,11 @@ input[type="number"] { -moz-appearance: textfield; }
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbXdrdGFlYnhwa2JsZHJic2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjAzNDksImV4cCI6MjA4OTkzNjM0OX0.k0PXIoofcgvQCmHie_bChux6VexPsDqNt5T8_tvvDOI';
 
   const { createClient } = window.supabase;
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // storageKey isolates connect.html's auth token from the dashboard's,
+  // preventing lock contention when both tabs are open simultaneously.
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { storageKey: 'sb-connect' }
+  });
 
   /* ============================================================
      PERMITTED USERS
