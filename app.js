@@ -286,14 +286,27 @@ async function renderExerciseChart() {
     .call(a => a.select('.domain').remove())
     .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
 
-  // Bars — grey when empty, gradient blue otherwise. Grow upward on load.
+  // Today is always the last entry in the days array
+  const todayIdx = days.length - 1;
+
+  // Bars — only today's bar gets the grow-up animation.
+  // Historical bars appear instantly so they don't re-animate on every update.
   g.selectAll('rect.bar').data(values).join('rect').attr('class', 'bar')
     .attr('x', (_, i) => x(labels[i])).attr('width', x.bandwidth())
     .attr('fill', d => d === 0 ? 'rgba(180,180,180,0.35)' : 'url(#exBarGrad)')
     .attr('rx', 4)
-    .attr('y', y(0)).attr('height', 0)
-    .transition().duration(700).ease(d3.easeCubicOut)
-    .attr('y', d => y(d)).attr('height', d => y(0) - y(d));
+    .each(function(d, i) {
+      const sel = d3.select(this);
+      if (i === todayIdx) {
+        // Animate today's bar growing up from the bottom
+        sel.attr('y', y(0)).attr('height', 0)
+          .transition().duration(700).ease(d3.easeCubicOut)
+          .attr('y', y(d)).attr('height', y(0) - y(d));
+      } else {
+        // Historical bars snap straight to their final position
+        sel.attr('y', y(d)).attr('height', y(0) - y(d));
+      }
+    });
 
   // Shimmer overlay on 100%-complete bars using SVG <animate> (SMIL).
   // The shimmer is a narrow bright rect that sweeps across each complete bar.

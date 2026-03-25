@@ -161,30 +161,27 @@ body {
    CARD BASE — shared styling for every section card
    ============================================================ */
 .card {
-  /* Glass: semi-transparent white + blur over the colourful background */
-  background: rgba(255,255,255,0.65);
+  background: rgba(255,255,255,0.82);
   backdrop-filter: blur(22px) saturate(180%);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
-  /* Top edge is brighter white — the "specular highlight" that makes it
-     look like light is catching the glass surface */
-  border: 1px solid rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.88);
   border-radius: var(--radius);
   padding: 26px;
   box-shadow:
-    0 4px 24px rgba(77,132,245,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.90);
+    0 4px 24px rgba(77,132,245,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.95);
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-  background: rgba(255,255,255,0.78);
-  border-color: rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.92);
+  border-color: rgba(255,255,255,0.98);
   box-shadow:
     0 8px 40px rgba(77,132,245,0.18),
     0 2px 12px rgba(77,132,245,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.95);
+    inset 0 1px 0 rgba(255,255,255,0.98);
 }
 
 /* Glowing accent line at the top of each card, revealed on hover */
@@ -372,9 +369,10 @@ input[type="number"] { -moz-appearance: textfield; }
   flex: 1;
   /* Covers the gradient underneath — the "unfilled" look */
   background: rgba(238,242,251,0.88);
-  /* Invisible divider: a thin white line between sections */
-  border-left: 1px solid rgba(255,255,255,0.50);
+  /* Hairline divider: just barely visible between sections */
+  border-left: 1px solid rgba(255,255,255,0.18);
   transition: background 0.12s;
+  cursor: pointer;
 }
 .pill-section:first-child { border-left: none; }
 
@@ -384,8 +382,8 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Hover preview — sections 1..N light up when hovering section N */
 .pill-section.preview { background: rgba(77,132,245,0.26); }
 
-/* Visitor (not logged in) — no pointer, slightly muted */
-.exercise-pill.readonly .pill-section { cursor: default; opacity: 0.7; }
+/* Visitor (not logged in) — identical look to logged-in, just no pointer/hover */
+.exercise-pill.readonly .pill-section { cursor: default; }
 
 /* Shimmer sweep — runs continuously when the pill is fully complete.
    The ::after element is a bright beam that sweeps left to right. */
