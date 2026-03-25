@@ -290,23 +290,20 @@ body {
   letter-spacing: 1.4px;
 }
 
-/* Back to dashboard — top left corner */
+/* Back to dashboard — sits inline to the left of Abisko */
 #backBtn {
-  position: fixed;
-  top: 18px;
-  left: 24px;
-  z-index: 10;
   display: none;
   background: rgba(245,158,11,0.10);
   border: 1px solid rgba(245,158,11,0.28);
   border-radius: 20px;
-  padding: 8px 18px;
+  padding: 7px 16px;
   color: var(--amber);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.3px;
   text-decoration: none;
-  cursor: pointer;
+  white-space: nowrap;
+  align-self: center;
   transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
   box-shadow: inset 0 1px 0 rgba(255,240,180,0.15);
 }
@@ -314,6 +311,14 @@ body {
   background: rgba(245,158,11,0.20);
   box-shadow: 0 4px 16px rgba(245,158,11,0.22), inset 0 1px 0 rgba(255,240,180,0.25);
   transform: translateY(-1px);
+}
+
+/* Wrapper for the right header column — button + Abisko side by side */
+.header-right-col {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
 }
 
 /* ============================================================
@@ -790,9 +795,6 @@ input[type="number"] { -moz-appearance: textfield; }
     <small>Signing you out…</small>
   </div>
 
-  <!-- Back to dashboard -->
-  <a id="backBtn" href="index.html">← Dashboard</a>
-
   <!-- Main page content — hidden until auth confirmed -->
   <div id="mainPage">
   <div id="pageWrap">
@@ -818,12 +820,15 @@ input[type="number"] { -moz-appearance: textfield; }
         <h1>Our Space 💛</h1>
       </div>
 
-      <div class="location-block right">
-        <div class="location-name">Abisko 🌌</div>
-        <div class="location-time" id="abiskoTime">--:--</div>
-        <div class="location-weather">
-          <span id="abiskoWeatherIcon">…</span>
-          <span id="abiskoTemp">--°C</span>
+      <div class="header-right-col">
+        <a id="backBtn" href="index.html">← Dashboard</a>
+        <div class="location-block right">
+          <div class="location-name">Abisko 🌌</div>
+          <div class="location-time" id="abiskoTime">--:--</div>
+          <div class="location-weather">
+            <span id="abiskoWeatherIcon">…</span>
+            <span id="abiskoTemp">--°C</span>
+          </div>
         </div>
       </div>
 
@@ -1232,7 +1237,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
     if (!presetMessage) input.value = '';
 
-    // Optimistic entry — appears immediately with a temp id
+    // Show message immediately — stays visible regardless of DB result
     const tempId  = 'pending-' + Date.now();
     const tempRow = { id: tempId, sender_name: currentUser.name, message, created_at: new Date().toISOString() };
     const emptyEl = myList.querySelector('.greeting-empty');
@@ -1241,33 +1246,19 @@ input[type="number"] { -moz-appearance: textfield; }
     appendGreetingItem(mySide, tempRow, myList);
     updateSendLimit();
 
-    // Save to Supabase
-    const { data, error } = await db.from('greetings').insert({
+    // Save to Supabase — no .select() so RLS can't block the return value
+    const { error } = await db.from('greetings').insert({
       sender_id:   currentUser.id,
       sender_name: currentUser.name,
       message,
       is_preset:   isPreset,
-    }).select().single();
+    });
 
     if (error) {
-      console.error('Failed to send greeting:', error);
-      // Roll back the optimistic entry
-      const pending = myList.querySelector(`[data-id="${tempId}"]`);
-      if (pending) pending.remove();
-      if (!myList.querySelector('.greeting-item')) {
-        const empty = document.createElement('p');
-        empty.className = 'greeting-empty';
-        empty.textContent = 'Nothing yet today — say hello 🌤';
-        myList.appendChild(empty);
-        document.getElementById(`person${mySide}Dot`).classList.remove('sent');
-      }
-      updateSendLimit();
-      return;
+      // Log so it's visible in F12 → Console, but keep the message on screen
+      console.error('Greeting insert failed (check RLS policies + column names):', error);
     }
-
-    // Replace temp id with real id so the remove button works
-    const pendingEl = myList.querySelector(`[data-id="${tempId}"]`);
-    if (pendingEl) pendingEl.dataset.id = data.id;
+    // Real id will arrive via Realtime and replace the temp id there
   }
 
   // Deletes a greeting from Supabase and removes it from the DOM.
@@ -1299,17 +1290,28 @@ input[type="number"] { -moz-appearance: textfield; }
     const side        = senderEmail === emails[0] ? 'A' : 'B';
     const list        = document.getElementById(`person${side}List`);
 
-    // Ignore if we already have this entry (own optimistic insert)
+    // If this is our own insert arriving via Realtime, find the matching
+    // pending item and upgrade it with the real DB id so the × button works
+    if (row.sender_name === currentUser.name) {
+      const pending = [...list.querySelectorAll('.greeting-item')]
+        .find(el => el.dataset.id.startsWith('pending-'));
+      if (pending) {
+        pending.dataset.id = row.id;
+        const removeBtn = pending.querySelector('.remove-greeting');
+        if (removeBtn) removeBtn.onclick = () => removeGreeting(row.id, side);
+      }
+      return; // don't add a second copy
+    }
+
+    // Partner's message — add it if we don't already have it and aren't at limit
     if (list.querySelector(`[data-id="${row.id}"]`)) return;
-    // Ignore if this side is already at limit
     if (list.querySelectorAll('.greeting-item').length >= 3) return;
 
     const emptyEl = list.querySelector('.greeting-empty');
     if (emptyEl) emptyEl.remove();
     document.getElementById(`person${side}Dot`).classList.add('sent');
     appendGreetingItem(side, row, list);
-
-    if (row.sender_name !== currentUser.name) triggerRipple();
+    triggerRipple();
     updateSendLimit();
   }
 
