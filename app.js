@@ -41,7 +41,7 @@ function getLastNDays(n) {
 // Converts "2025-03-24" into a short chart label like "24 Mar"
 function shortLabel(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
 }
 
 // Shows a brief confirmation message that fades out after 2.5 seconds
@@ -202,7 +202,7 @@ function showOfflineBanner() {
    { date, data[] } shape the rest of the code uses.
    ────────────────────────────────────────────────────────────── */
 
-const EXERCISE_NAMES       = ['Exercise 1', 'Exercise 2', 'Exercise 3', 'Exercise 4'];
+const EXERCISE_NAMES       = ['Övning 1', 'Övning 2', 'Övning 3', 'Övning 4'];
 const CIRCLES_PER_EXERCISE = [6, 6, 6, 3];
 const MAX_TOTAL_CIRCLES    = CIRCLES_PER_EXERCISE.reduce((a, b) => a + b, 0); // 21
 
@@ -357,7 +357,7 @@ async function renderExerciseChart() {
     .on('mousemove', function(event) {
       const [mx] = d3.pointer(event);
       const idx  = Math.max(0, Math.min(labels.length - 1, Math.floor(mx / x.step())));
-      showTip(`<strong>${labels[idx]}</strong><br>Exercises: ${values[idx]} / ${MAX_TOTAL_CIRCLES}`, event);
+      showTip(`<strong>${labels[idx]}</strong><br>Övningar: ${values[idx]} / ${MAX_TOTAL_CIRCLES}`, event);
     })
     .on('mouseleave', hideTip);
 }
@@ -544,7 +544,7 @@ async function renderReading() {
     g.append('text')
       .attr('x', x(labels[peakIdx])).attr('y', y(values[peakIdx]) - 10)
       .attr('fill', '#4d84f5').attr('font-size', '11px').attr('text-anchor', 'middle')
-      .text(values[peakIdx].toLocaleString() + ' pages');
+      .text(values[peakIdx].toLocaleString() + ' sidor');
   }
 
   g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
@@ -552,7 +552,7 @@ async function renderReading() {
       const [mx] = d3.pointer(event);
       const step = W / (labels.length - 1);
       const idx  = Math.max(0, Math.min(labels.length - 1, Math.round(mx / step)));
-      showTip(`<strong>${labels[idx]}</strong><br>Total: ${values[idx].toLocaleString()} pages`, event);
+      showTip(`<strong>${labels[idx]}</strong><br>Totalt: ${values[idx].toLocaleString()} sidor`, event);
     })
     .on('mouseleave', hideTip);
 }
@@ -599,7 +599,7 @@ async function saveWellbeing() {
     pain:       +document.getElementById('painSlider').value
   }, { onConflict: 'date' });
 
-  showFeedback('wellbeingFeedback', '✓ Ratings saved for today');
+  showFeedback('wellbeingFeedback', '✓ Betyg sparade för idag');
   await renderWellbeing();
 }
 
@@ -637,10 +637,10 @@ async function renderWellbeing() {
     .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
 
   const series = [
-    { name: 'Mood',       color: '#4d84f5', vals: mood       },
-    { name: 'Energy',     color: '#f59e0b', vals: energy     },
+    { name: 'Humör',      color: '#4d84f5', vals: mood       },
+    { name: 'Energi',     color: '#f59e0b', vals: energy     },
     { name: 'Motivation', color: '#0fd9a8', vals: motivation },
-    { name: 'Pain',       color: '#f87171', vals: pain       },
+    { name: 'Smärta',     color: '#f87171', vals: pain       },
   ];
 
   series.forEach((s, si) => {
@@ -681,8 +681,8 @@ async function renderWellbeing() {
       const idx  = Math.max(0, Math.min(labels.length - 1, Math.round(mx / step)));
       showTip(
         `<strong>${labels[idx]}</strong><br>` +
-        `Mood: ${mood[idx] ?? '—'} &nbsp; Energy: ${energy[idx] ?? '—'}<br>` +
-        `Motivation: ${motivation[idx] ?? '—'} &nbsp; Pain: ${pain[idx] ?? '—'}`,
+        `Humör: ${mood[idx] ?? '—'} &nbsp; Energi: ${energy[idx] ?? '—'}<br>` +
+        `Motivation: ${motivation[idx] ?? '—'} &nbsp; Smärta: ${pain[idx] ?? '—'}`,
         event
       );
     })
@@ -709,7 +709,7 @@ async function saveSleep() {
     { onConflict: 'date' }
   );
 
-  showFeedback('sleepFeedback', '✓ Sleep logged');
+  showFeedback('sleepFeedback', '✓ Sömn loggad');
   await renderSleep();
 }
 
@@ -769,14 +769,14 @@ async function renderSleep() {
   // "Target" label to the right of the chart (in the right margin)
   g.append('text')
     .attr('x', W + 6).attr('y', y(8) + 4)
-    .attr('fill', '#0ab890').attr('font-size', '11px').text('Target');
+    .attr('fill', '#0ab890').attr('font-size', '11px').text('Mål');
 
   g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
     .on('mousemove', function(event) {
       const [mx] = d3.pointer(event);
       const idx  = Math.max(0, Math.min(labels.length - 1, Math.floor(mx / x.step())));
       showTip(
-        `<strong>${labels[idx]}</strong><br>Sleep: ${values[idx] != null ? values[idx] + 'h' : '—'}`,
+        `<strong>${labels[idx]}</strong><br>Sömn: ${values[idx] != null ? values[idx] + 'h' : '—'}`,
         event
       );
     })
@@ -837,7 +837,7 @@ async function renderTodos() {
   const items     = todos || [];
   const remaining = items.filter(t => !t.done).length;
 
-  countEl.textContent = `${remaining} task${remaining !== 1 ? 's' : ''} remaining`;
+  countEl.textContent = `${remaining} uppgift${remaining !== 1 ? 'er' : ''} kvar`;
   list.innerHTML = '';
 
   items.forEach(todo => {
@@ -853,7 +853,7 @@ async function renderTodos() {
     const del = document.createElement('button');
     del.className   = 'todo-delete';
     del.textContent = '×';
-    del.title       = 'Delete task';
+    del.title       = 'Ta bort uppgift';
     del.addEventListener('click', e => {
       e.stopPropagation(); // Don't also trigger the toggle
       deleteTodo(todo.id);
@@ -876,7 +876,7 @@ async function renderTodos() {
 
   // Header date badge
   const now = new Date();
-  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-GB', {
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('sv-SE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 

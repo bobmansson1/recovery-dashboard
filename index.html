@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bob's Recovery Dashboard</title>
+  <title>Bobs Återhämtningsdashboard</title>
 
   <!-- D3.js v7 loaded from CDN — draws our SVG charts -->
   <script
@@ -12,7 +12,7 @@
   ></script>
   <!-- Shown only if D3 fails to load (e.g. no internet connection) -->
   <div id="chartError" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin:0 36px; font-size:13px; color:#856404;">
-    ⚠️ Charts could not load — you may be offline. All tracking inputs still work and your data is safe.
+    ⚠️ Diagram kunde inte laddas — du kanske är offline. Alla inmatningar fungerar fortfarande och din data är säker.
   </div>
 
   <!-- All the page styles live in this separate file -->
@@ -26,27 +26,27 @@
   <header class="site-header">
     <h1>Bob's Recovery Dashboard</h1>
     <div class="header-right">
-      <a href="forecast.html" class="nav-btn">Weekly Forecast</a>
+      <a href="forecast.html" class="nav-btn">Veckoprognos</a>
       <!-- Our Space button — only shown for the two permitted accounts, never visible to others -->
       <a href="connect.html" id="connectBtn" class="connect-btn" style="display:none">Our Space 💛</a>
       <!-- Auth controls — shown/hidden by app.js based on login state -->
-      <button id="loginBtn" class="nav-btn" onclick="signIn()" style="display:none">Sign in</button>
+      <button id="loginBtn" class="nav-btn" onclick="signIn()" style="display:none">Logga in</button>
       <div id="userInfo" class="user-info" style="display:none">
-        <img id="userAvatar" class="user-avatar" src="" alt="You" />
-        <button class="nav-btn" onclick="signOut()">Sign out</button>
+        <img id="userAvatar" class="user-avatar" src="" alt="Du" />
+        <button class="nav-btn" onclick="signOut()">Logga ut</button>
       </div>
-      <div class="date-badge" id="headerDate">Loading…</div>
+      <div class="date-badge" id="headerDate">Laddar…</div>
     </div>
   </header>
 
 
   <!-- Shown if the database cannot be reached -->
   <div id="offlineBanner" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin-bottom:24px; font-size:13px; color:#856404;">
-    ⚠️ Could not connect to the database. Check your internet connection and refresh the page. Your data is safe.
+    ⚠️ Kunde inte ansluta till databasen. Kontrollera din internetanslutning och ladda om sidan. Din data är säker.
   </div>
 
   <!-- Shown to visitors who are not logged in -->
-  <p class="edit-hint">Log in to edit</p>
+  <p class="edit-hint">Logga in för att redigera</p>
 
   <!-- ============================================================
        MAIN GRID — all five sections
@@ -55,7 +55,7 @@
 
     <!-- ── SECTION 1: EXERCISE TRACKER ──────────────────────────── -->
     <section class="card">
-      <div class="card-title">Exercise Tracker</div>
+      <div class="card-title">Träningslogg</div>
       <!-- JavaScript will build 4 rows of circles inside here -->
       <div class="exercise-list" id="exerciseList"></div>
       <!-- D3 will inject an SVG chart inside this div -->
@@ -64,25 +64,25 @@
 
     <!-- ── SECTION 2: READING TRACKER ───────────────────────────── -->
     <section class="card">
-      <div class="card-title">Reading Tracker</div>
+      <div class="card-title">Läslogg</div>
       <div class="reading-input-row owner-only">
         <input
           class="text-input"
           type="number"
           id="readingInput"
-          placeholder="Pages read this session"
+          placeholder="Sidor lästa denna session"
           min="1"
           onkeydown="if(event.key==='Enter') addReading()"
         />
-        <button class="btn" onclick="addReading()">Add Pages</button>
+        <button class="btn" onclick="addReading()">Lägg till sidor</button>
       </div>
       <div id="readingChart"></div>
-      <p class="reading-total">All-time total: <span id="readingTotal">0</span> pages</p>
+      <p class="reading-total">Totalt antal: <span id="readingTotal">0</span> sidor</p>
     </section>
 
     <!-- ── SECTION 3: WELLBEING TRACKER (full width) ────────────── -->
     <section class="card card-wellbeing">
-      <div class="card-title">Wellbeing Tracker</div>
+      <div class="card-title">Välmåendelogg</div>
       <div class="wellbeing-layout">
 
         <!-- Left: the four rating sliders -->
@@ -90,7 +90,7 @@
 
           <div class="slider-group">
             <div class="slider-header">
-              <span class="slider-label">Mood</span>
+              <span class="slider-label">Humör</span>
               <span class="slider-value" id="moodVal">5</span>
             </div>
             <input type="range" class="mood-slider" id="moodSlider"
@@ -100,7 +100,7 @@
 
           <div class="slider-group">
             <div class="slider-header">
-              <span class="slider-label">Energy</span>
+              <span class="slider-label">Energi</span>
               <span class="slider-value" id="energyVal">5</span>
             </div>
             <input type="range" class="energy-slider" id="energySlider"
@@ -120,7 +120,7 @@
 
           <div class="slider-group">
             <div class="slider-header">
-              <span class="slider-label">Pain Level</span>
+              <span class="slider-label">Smärtnivå</span>
               <span class="slider-value" id="painVal">5</span>
             </div>
             <input type="range" class="pain-slider" id="painSlider"
@@ -128,7 +128,7 @@
               oninput="document.getElementById('painVal').textContent = this.value" />
           </div>
 
-          <button class="btn" onclick="saveWellbeing()">Save Today's Ratings</button>
+          <button class="btn" onclick="saveWellbeing()">Spara dagens betyg</button>
           <p class="save-feedback" id="wellbeingFeedback"></p>
 
         </div>
@@ -143,18 +143,18 @@
 
     <!-- ── SECTION 4: SLEEP TRACKER ─────────────────────────────── -->
     <section class="card">
-      <div class="card-title">Sleep Tracker</div>
+      <div class="card-title">Sömnlogg</div>
       <div class="sleep-input-row owner-only">
-        <label for="sleepInput">Hours slept last night:</label>
+        <label for="sleepInput">Timmar sömn förra natten:</label>
         <input
           class="text-input"
           type="number"
           id="sleepInput"
-          placeholder="e.g. 7.5"
+          placeholder="t.ex. 7,5"
           min="0" max="24" step="0.25"
           onkeydown="if(event.key==='Enter') saveSleep()"
         />
-        <button class="btn" onclick="saveSleep()">Save</button>
+        <button class="btn" onclick="saveSleep()">Spara</button>
       </div>
       <div id="sleepChart"></div>
       <p class="save-feedback" id="sleepFeedback"></p>
@@ -162,18 +162,18 @@
 
     <!-- ── SECTION 5: TO-DO LIST ─────────────────────────────────── -->
     <section class="card">
-      <div class="card-title">To-Do List</div>
+      <div class="card-title">Att-göra-lista</div>
       <div class="todo-input-row owner-only">
         <input
           class="text-input"
           type="text"
           id="todoInput"
-          placeholder="Add a task…"
+          placeholder="Lägg till en uppgift…"
           onkeydown="if(event.key==='Enter') addTodo()"
         />
-        <button class="btn" onclick="addTodo()">Add</button>
+        <button class="btn" onclick="addTodo()">Lägg till</button>
       </div>
-      <p class="todo-count" id="todoCount">0 tasks remaining</p>
+      <p class="todo-count" id="todoCount">0 uppgifter kvar</p>
       <!-- JavaScript builds the task items inside here -->
       <div class="todo-list" id="todoList"></div>
     </section>

@@ -80,13 +80,13 @@ function getCurrentWeekDates() {
 // Returns a short day name like "Mon", "Tue" from a date string
 function shortDayName(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', { weekday: 'short' });
+  return d.toLocaleDateString('sv-SE', { weekday: 'short' });
 }
 
 // Formats a date range as "24 Mar – 30 Mar"
 function formatWeekRange(dates) {
   if (!dates.length) return '';
-  const fmt = s => new Date(s + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const fmt = s => new Date(s + 'T00:00:00').toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
   return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
 }
 
@@ -110,21 +110,21 @@ function showOfflineBanner() {
    ────────────────────────────────────────────────────────────── */
 
 function wmoToInfo(code) {
-  if (code === 0)  return { icon: '☀️',  label: 'Clear sky' };
-  if (code === 1)  return { icon: '🌤️', label: 'Mainly clear' };
-  if (code === 2)  return { icon: '⛅',  label: 'Partly cloudy' };
-  if (code === 3)  return { icon: '☁️',  label: 'Overcast' };
-  if (code <= 48)  return { icon: '🌫️', label: 'Fog' };
-  if (code <= 55)  return { icon: '🌦️', label: 'Drizzle' };
-  if (code <= 65)  return { icon: '🌧️', label: 'Rain' };
-  if (code <= 67)  return { icon: '🌧️', label: 'Freezing rain' };
-  if (code <= 75)  return { icon: '🌨️', label: 'Snow' };
-  if (code <= 77)  return { icon: '🌨️', label: 'Snow grains' };
-  if (code <= 82)  return { icon: '🌦️', label: 'Showers' };
-  if (code <= 86)  return { icon: '🌨️', label: 'Snow showers' };
-  if (code === 95) return { icon: '⛈️',  label: 'Thunderstorm' };
-  if (code >= 96)  return { icon: '⛈️',  label: 'Thunderstorm' };
-  return { icon: '🌡️', label: 'Unknown' };
+  if (code === 0)  return { icon: '☀️',  label: 'Klar himmel' };
+  if (code === 1)  return { icon: '🌤️', label: 'Mestadels klart' };
+  if (code === 2)  return { icon: '⛅',  label: 'Delvis molnigt' };
+  if (code === 3)  return { icon: '☁️',  label: 'Mulet' };
+  if (code <= 48)  return { icon: '🌫️', label: 'Dimma' };
+  if (code <= 55)  return { icon: '🌦️', label: 'Duggregn' };
+  if (code <= 65)  return { icon: '🌧️', label: 'Regn' };
+  if (code <= 67)  return { icon: '🌧️', label: 'Underkylt regn' };
+  if (code <= 75)  return { icon: '🌨️', label: 'Snö' };
+  if (code <= 77)  return { icon: '🌨️', label: 'Snökorn' };
+  if (code <= 82)  return { icon: '🌦️', label: 'Regnskurar' };
+  if (code <= 86)  return { icon: '🌨️', label: 'Snöskurar' };
+  if (code === 95) return { icon: '⛈️',  label: 'Åska' };
+  if (code >= 96)  return { icon: '⛈️',  label: 'Åska' };
+  return { icon: '🌡️', label: 'Okänt' };
 }
 
 
@@ -183,24 +183,24 @@ function getMotivationalMessage(avgMood) {
   if (avgMood === null) {
     return {
       icon: '📋',
-      text: 'No wellbeing ratings recorded yet this week. Head to the dashboard and log your first entry!'
+      text: 'Inga välmåendebetyg registrerade denna vecka. Gå till dashboarden och logga ditt första!'
     };
   }
   if (avgMood < 5) {
     return {
       icon: '💙',
-      text: 'Recovery takes time, and every small step forward counts. Be patient and kind to yourself — you are doing better than you think.'
+      text: 'Återhämtning tar tid och varje litet steg framåt räknas. Ha tålamod och var snäll mot dig själv — du gör det bättre än du tror.'
     };
   }
   if (avgMood <= 7) {
     return {
       icon: '⭐',
-      text: 'You are making steady progress, Bob. Consistency is everything in recovery — keep showing up each day and the results will follow.'
+      text: 'Du gör stadiga framsteg, Bob. Konsekvens är allt i återhämtning — fortsätt visa upp varje dag och resultaten kommer att följa.'
     };
   }
   return {
     icon: '🎉',
-    text: 'What a week! You are in great form Bob — the numbers speak for themselves. Keep this energy going!'
+    text: 'Vilken vecka! Du är i strålande form Bob — siffrorna talar för sig själva. Håll den här energin vid liv!'
   };
 }
 
@@ -223,7 +223,7 @@ async function renderSummary() {
   const msg = getMotivationalMessage(stats.mood);
   document.getElementById('messageIcon').textContent = msg.icon;
   document.getElementById('messageText').textContent = msg.text;
-  document.getElementById('messageWeek').textContent = `Week of ${formatWeekRange(stats.weekDates)}`;
+  document.getElementById('messageWeek').textContent = `Vecka: ${formatWeekRange(stats.weekDates)}`;
 
   // Six stat cards
   setStatCard('statMood',       stats.mood);
@@ -299,7 +299,7 @@ function renderWeather(data) {
 function showWeatherError() {
   const status = document.getElementById('weatherStatus');
   status.classList.add('error');
-  status.innerHTML = 'Weather data is unavailable right now — try refreshing the page.';
+  status.innerHTML = 'Väderdata är otillgänglig just nu — försök ladda om sidan.';
 }
 
 async function fetchWeatherAbisko() {
@@ -319,7 +319,7 @@ async function fetchWeatherAbisko() {
     console.warn('Abisko weather fetch failed:', err);
     const status = document.getElementById('abiskoStatus');
     status.classList.add('error');
-    status.innerHTML = 'Weather data is unavailable right now — try refreshing the page.';
+    status.innerHTML = 'Väderdata är otillgänglig just nu — försök ladda om sidan.';
   }
 }
 
@@ -361,9 +361,9 @@ function renderWeatherAbisko(data) {
 
   // Header date badge
   const now = new Date();
-  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-GB', {
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('sv-SE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-  });
+  }).replace(/^./, c => c.toUpperCase());
 
   // onAuthStateChange is the single source of truth for auth state.
   // Handles both returning visits (INITIAL_SESSION) and fresh OAuth logins (SIGNED_IN).

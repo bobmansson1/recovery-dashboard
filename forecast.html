@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weekly Forecast — Bob's Recovery</title>
+  <title>Veckoprognos — Bobs Återhämtning</title>
 
   <!-- Shared styles used by both pages (variables, reset, body, header, cards) -->
   <link rel="stylesheet" href="styles.css" />
@@ -16,23 +16,22 @@
        HEADER
        ============================================================ -->
   <header class="site-header">
-    <h1>Weekly Forecast</h1>
+    <h1>Veckoprognos</h1>
     <div class="header-right">
-      <a href="index.html" class="nav-btn">← Back to Dashboard</a>
-      <!-- Auth controls — shown/hidden by forecast.js based on login state -->
-      <button id="loginBtn" class="nav-btn" onclick="signIn()" style="display:none">Sign in</button>
+      <a href="index.html" class="nav-btn">← Tillbaka till dashboarden</a>
+      <button id="loginBtn" class="nav-btn" onclick="signIn()" style="display:none">Logga in</button>
       <div id="userInfo" class="user-info" style="display:none">
-        <img id="userAvatar" class="user-avatar" src="" alt="You" />
-        <button class="nav-btn" onclick="signOut()">Sign out</button>
+        <img id="userAvatar" class="user-avatar" src="" alt="Du" />
+        <button class="nav-btn" onclick="signOut()">Logga ut</button>
       </div>
-      <div class="date-badge" id="headerDate">Loading…</div>
+      <div class="date-badge" id="headerDate">Laddar…</div>
     </div>
   </header>
 
 
   <!-- Shown if the database cannot be reached -->
   <div id="offlineBanner" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin-bottom:24px; font-size:13px; color:#856404;">
-    ⚠️ Could not connect to the database. Check your internet connection and refresh the page.
+    ⚠️ Kunde inte ansluta till databasen. Kontrollera din internetanslutning och ladda om sidan.
   </div>
 
   <!-- ============================================================
@@ -42,9 +41,9 @@
 
     <!-- Motivational message -->
     <div class="card" id="messageCard">
-      <div class="card-title">This Week's Mood</div>
+      <div class="card-title">Veckans humör</div>
       <span class="message-icon" id="messageIcon">💬</span>
-      <p class="message-text" id="messageText">Loading your weekly summary…</p>
+      <p class="message-text" id="messageText">Laddar din veckosammanfattning…</p>
       <p class="message-week" id="messageWeek"></p>
     </div>
 
@@ -52,49 +51,49 @@
     <div class="stats-grid">
 
       <div class="card stat-card">
-        <div class="stat-label">Avg Mood</div>
+        <div class="stat-label">Medelhumör</div>
         <div class="stat-value no-data" id="statMood">—</div>
-        <div class="stat-unit">out of 10</div>
+        <div class="stat-unit">av 10</div>
       </div>
 
       <div class="card stat-card">
-        <div class="stat-label">Avg Energy</div>
+        <div class="stat-label">Medelenergi</div>
         <div class="stat-value no-data" id="statEnergy">—</div>
-        <div class="stat-unit">out of 10</div>
+        <div class="stat-unit">av 10</div>
       </div>
 
       <div class="card stat-card">
         <div class="stat-label">Motivation</div>
         <div class="stat-value no-data" id="statMotivation">—</div>
-        <div class="stat-unit">out of 10</div>
+        <div class="stat-unit">av 10</div>
       </div>
 
       <div class="card stat-card">
-        <div class="stat-label">Pain Level</div>
+        <div class="stat-label">Smärtnivå</div>
         <div class="stat-value no-data" id="statPain">—</div>
-        <div class="stat-unit">out of 10</div>
+        <div class="stat-unit">av 10</div>
       </div>
 
       <div class="card stat-card">
-        <div class="stat-label">Pages Read</div>
+        <div class="stat-label">Sidor lästa</div>
         <div class="stat-value no-data" id="statPages">—</div>
-        <div class="stat-unit">this week</div>
+        <div class="stat-unit">denna vecka</div>
       </div>
 
       <div class="card stat-card">
-        <div class="stat-label">Avg Sleep</div>
+        <div class="stat-label">Medelsömn</div>
         <div class="stat-value no-data" id="statSleep">—</div>
-        <div class="stat-unit">hours / night</div>
+        <div class="stat-unit">timmar / natt</div>
       </div>
 
     </div>
 
     <!-- Kalmar weather -->
     <div class="card" id="weatherCard">
-      <div class="card-title">Weather — Kalmar, Sweden</div>
+      <div class="card-title">Väder — Kalmar, Sverige</div>
       <div class="weather-status" id="weatherStatus">
         <div class="spinner"></div>
-        <span>Fetching weather data…</span>
+        <span>Hämtar väderdata…</span>
       </div>
       <div id="weatherContent" style="display:none;">
         <div class="weather-inner">
@@ -102,7 +101,7 @@
             <span class="current-weather-icon" id="currentIcon"></span>
             <div class="current-temp" id="currentTemp"></div>
             <div class="current-condition" id="currentCondition"></div>
-            <div class="current-location">Kalmar, Sweden</div>
+            <div class="current-location">Kalmar, Sverige</div>
           </div>
           <div class="forecast-strip" id="forecastStrip"></div>
         </div>
@@ -111,10 +110,10 @@
 
     <!-- Abisko weather -->
     <div class="card" id="abiskoCard">
-      <div class="card-title">Weather — Abisko, Swedish Lapland</div>
+      <div class="card-title">Väder — Abisko, Svenska Lappland</div>
       <div class="weather-status" id="abiskoStatus">
         <div class="spinner"></div>
-        <span>Fetching weather data…</span>
+        <span>Hämtar väderdata…</span>
       </div>
       <div id="abiskoContent" style="display:none;">
         <div class="weather-inner">
@@ -122,7 +121,7 @@
             <span class="current-weather-icon" id="abiskoIcon"></span>
             <div class="current-temp" id="abiskoTemp"></div>
             <div class="current-condition" id="abiskoCondition"></div>
-            <div class="current-location">Abisko, Swedish Lapland</div>
+            <div class="current-location">Abisko, Svenska Lappland</div>
           </div>
           <div class="forecast-strip" id="abiskoStrip"></div>
         </div>

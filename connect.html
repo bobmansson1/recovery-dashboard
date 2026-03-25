@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -777,7 +777,7 @@ input[type="number"] { -moz-appearance: textfield; }
   <!-- Auth gate — shown while not logged in or checking session -->
   <div id="authGate">
     <h1>Our Space 💛</h1>
-    <p>A private place, just for the two of you.</p>
+    <p>En privat plats, bara för er två.</p>
     <button class="auth-btn" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#f59e0b"/>
@@ -785,14 +785,14 @@ input[type="number"] { -moz-appearance: textfield; }
         <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#fcd34d"/>
         <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#f59e0b"/>
       </svg>
-      Sign in with Google
+      Logga in med Google
     </button>
   </div>
 
   <!-- Wrong account message -->
   <div id="wrongAccountMsg">
-    <p>This space is private — only two people have the key 💛</p>
-    <small>Signing you out…</small>
+    <p>Den här platsen är privat — bara två personer har nyckeln 💛</p>
+    <small>Loggar ut dig…</small>
   </div>
 
   <!-- Main page content — hidden until auth confirmed -->
@@ -800,7 +800,7 @@ input[type="number"] { -moz-appearance: textfield; }
   <div id="pageWrap">
 
     <!-- CONNECTION ERROR BANNER -->
-    <div id="errorBanner">⚠️ Having trouble connecting — some things may not update in real time.</div>
+    <div id="errorBanner">⚠️ Problem med anslutningen — vissa saker kanske inte uppdateras i realtid.</div>
 
     <!-- ============================================================
          HEADER — two locations with time + weather
@@ -838,7 +838,7 @@ input[type="number"] { -moz-appearance: textfield; }
          SECTION 1 — DAILY GREETING
          ============================================================ -->
     <section class="anim-1" style="margin-bottom: 20px;">
-      <div class="section-label">Today's Greeting</div>
+      <div class="section-label">Dagens hälsning</div>
 
       <!-- Two cards — one per person -->
       <div class="greeting-cards-row">
@@ -846,20 +846,20 @@ input[type="number"] { -moz-appearance: textfield; }
         <div class="glass-card greeting-card" id="personACard">
           <div class="person-name-row">
             <span class="person-name" id="personAName">…</span>
-            <span class="greeting-dot" id="personADot" title="Sent a greeting today"></span>
+            <span class="greeting-dot" id="personADot" title="Skickade en hälsning idag"></span>
           </div>
           <div class="greeting-list" id="personAList">
-            <p class="greeting-empty">Nothing yet today — say hello 🌤</p>
+            <p class="greeting-empty">Inget ännu idag — säg hej 🌤</p>
           </div>
         </div>
 
         <div class="glass-card greeting-card" id="personBCard">
           <div class="person-name-row">
             <span class="person-name" id="personBName">…</span>
-            <span class="greeting-dot" id="personBDot" title="Sent a greeting today"></span>
+            <span class="greeting-dot" id="personBDot" title="Skickade en hälsning idag"></span>
           </div>
           <div class="greeting-list" id="personBList">
-            <p class="greeting-empty">Nothing yet today — say hello 🌤</p>
+            <p class="greeting-empty">Inget ännu idag — säg hej 🌤</p>
           </div>
         </div>
 
@@ -868,22 +868,22 @@ input[type="number"] { -moz-appearance: textfield; }
       <!-- Input area: preset buttons + free text -->
       <div class="glass-card">
         <div class="preset-buttons">
-          <button class="preset-btn" onclick="sendGreeting('Good morning ☀️', true)">Good morning ☀️</button>
-          <button class="preset-btn" onclick="sendGreeting('Thinking of you 💛', true)">Thinking of you 💛</button>
-          <button class="preset-btn" onclick="sendGreeting('Missing you 🌙', true)">Missing you 🌙</button>
-          <button class="preset-btn" onclick="sendGreeting('Sending love ❤️', true)">Sending love ❤️</button>
+          <button class="preset-btn" onclick="sendGreeting('God morgon ☀️', true)">God morgon ☀️</button>
+          <button class="preset-btn" onclick="sendGreeting('Tänker på dig 💛', true)">Tänker på dig 💛</button>
+          <button class="preset-btn" onclick="sendGreeting('Saknar dig 🌙', true)">Saknar dig 🌙</button>
+          <button class="preset-btn" onclick="sendGreeting('Skickar kärlek ❤️', true)">Skickar kärlek ❤️</button>
         </div>
         <div class="greeting-text-row">
           <input
             class="warm-input"
             type="text"
             id="greetingInput"
-            placeholder="Write your own message…"
+            placeholder="Skriv ditt eget meddelande…"
             onkeydown="if(event.key==='Enter') sendGreeting()"
           />
-          <button class="warm-btn" id="greetingSendBtn" onclick="sendGreeting()">Send 💛</button>
+          <button class="warm-btn" id="greetingSendBtn" onclick="sendGreeting()">Skicka 💛</button>
         </div>
-        <p class="greeting-limit" id="greetingLimitMsg">3 sent today — remove one to add a new message</p>
+        <p class="greeting-limit" id="greetingLimitMsg">3 skickade idag — ta bort en för att lägga till ett nytt</p>
       </div>
 
     </section>
@@ -892,7 +892,7 @@ input[type="number"] { -moz-appearance: textfield; }
          SECTION 2 — SHARED JOURNAL
          ============================================================ -->
     <section class="anim-2">
-      <div class="section-label">Our Journal</div>
+      <div class="section-label">Vår dagbok</div>
 
       <div class="glass-card">
 
@@ -901,7 +901,7 @@ input[type="number"] { -moz-appearance: textfield; }
           <button class="calendar-nav-btn" id="calPrevBtn" onclick="changeMonth(-1)">‹</button>
           <span id="calMonthLabel"></span>
           <button class="calendar-nav-btn" id="calNextBtn" onclick="changeMonth(1)">›</button>
-          <button class="calendar-nav-btn today-btn" onclick="jumpToToday()">Today</button>
+          <button class="calendar-nav-btn today-btn" onclick="jumpToToday()">Idag</button>
         </div>
         <div class="calendar-grid" id="calendarGrid"></div>
 
@@ -914,10 +914,10 @@ input[type="number"] { -moz-appearance: textfield; }
             class="warm-input"
             type="text"
             id="journalInput"
-            placeholder="Write something…"
+            placeholder="Skriv något…"
             onkeydown="if(event.key==='Enter') sendJournalEntry()"
           />
-          <button class="warm-btn" onclick="sendJournalEntry()">Send</button>
+          <button class="warm-btn" onclick="sendJournalEntry()">Skicka</button>
         </div>
 
       </div>
@@ -1120,7 +1120,7 @@ input[type="number"] { -moz-appearance: textfield; }
   }
 
   function formatDateFull(isoString) {
-    return new Date(isoString).toLocaleDateString('en-GB', {
+    return new Date(isoString).toLocaleDateString('sv-SE', {
       timeZone: 'Europe/Stockholm',
       day: 'numeric', month: 'short', year: 'numeric'
     });
@@ -1172,7 +1172,7 @@ input[type="number"] { -moz-appearance: textfield; }
     if (!greetings.length) {
       const empty = document.createElement('p');
       empty.className = 'greeting-empty';
-      empty.textContent = 'Nothing yet today — say hello 🌤';
+      empty.textContent = 'Inget ännu idag — säg hej 🌤';
       listEl.appendChild(empty);
       dotEl.classList.remove('sent');
       return;
@@ -1206,7 +1206,7 @@ input[type="number"] { -moz-appearance: textfield; }
       const btn = document.createElement('button');
       btn.className = 'remove-greeting';
       btn.textContent = '×';
-      btn.title = 'Remove';
+      btn.title = 'Ta bort';
       btn.onclick = () => removeGreeting(greeting.id, side);
       item.appendChild(btn);
     }
@@ -1280,7 +1280,7 @@ input[type="number"] { -moz-appearance: textfield; }
     if (list && !list.querySelector('.greeting-item')) {
       const empty = document.createElement('p');
       empty.className = 'greeting-empty';
-      empty.textContent = 'Nothing yet today — say hello 🌤';
+      empty.textContent = 'Inget ännu idag — säg hej 🌤';
       list.appendChild(empty);
       document.getElementById(`person${side}Dot`).classList.remove('sent');
     }
@@ -1357,8 +1357,8 @@ input[type="number"] { -moz-appearance: textfield; }
       const empty = document.createElement('div');
       empty.className = 'journal-empty';
       empty.textContent = dateFilter
-        ? 'A quiet day — nothing written 🌿'
-        : 'Nothing written yet — start your story 🌱';
+        ? 'En stilla dag — inget skrivet 🌿'
+        : 'Inget skrivet ännu — börja er berättelse 🌱';
       scroll.appendChild(empty);
       return;
     }
@@ -1508,12 +1508,13 @@ input[type="number"] { -moz-appearance: textfield; }
     const year  = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
 
-    label.textContent = calendarMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    label.textContent = calendarMonth.toLocaleDateString('sv-SE', { month: 'long', year: 'numeric' })
+      .replace(/^./, c => c.toUpperCase());
 
     grid.innerHTML = '';
 
     // Day headers — Monday first
-    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+    ['Mån','Tis','Ons','Tor','Fre','Lör','Sön'].forEach(d => {
       const h = document.createElement('div');
       h.className   = 'cal-header';
       h.textContent = d;
