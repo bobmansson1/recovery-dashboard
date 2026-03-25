@@ -151,7 +151,7 @@ function updateAuthUI(session) {
   // !! REPLACE PLACEHOLDERS with real Gmail addresses !!
   const CONNECT_EMAILS = [
     'bob.mansson1@gmail.com',      // Bob — replace if needed
-    'PLACEHOLDER_PARTNER@gmail.com', // TODO: add partner's Gmail address
+    'alicia.jernhag@gmail.com',
   ];
   const connectBtn = document.getElementById('connectBtn');
   if (connectBtn) {
