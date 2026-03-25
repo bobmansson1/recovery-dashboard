@@ -866,6 +866,16 @@ async function renderTodos() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
+  // Register the auth listener FIRST — before any async/await calls.
+  // After a Google OAuth redirect, Supabase exchanges the auth code for a
+  // session in the background. If we wait until after checkConnection() to
+  // register this listener, that exchange can finish and fire SIGNED_IN
+  // before we're listening — and the login UI never updates.
+  // Registering here guarantees we never miss that event.
+  db.auth.onAuthStateChange((_event, newSession) => {
+    updateAuthUI(newSession);
+  });
+
   // Test the database connection before loading any data
   const online = await checkConnection();
   if (!online) {
@@ -873,16 +883,10 @@ async function renderTodos() {
     return; // Stop here — no point trying to load data if offline
   }
 
-  // Check whether Bob is already logged in from a previous visit.
-  // Supabase stores the session in localStorage automatically.
+  // Get the current session (will already be set if onAuthStateChange
+  // fired during the connection check above)
   const { data: { session } } = await db.auth.getSession();
   updateAuthUI(session);
-
-  // Keep the UI in sync if auth state changes while the page is open
-  // (e.g. after the Google redirect comes back, or after sign-out)
-  db.auth.onAuthStateChange((_event, newSession) => {
-    updateAuthUI(newSession);
-  });
 
   try { await renderExercises();                               } catch (e) { console.error('Exercises failed:', e); }
   try { await renderReading();                                 } catch (e) { console.error('Reading failed:',   e); }

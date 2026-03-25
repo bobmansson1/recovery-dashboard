@@ -365,6 +365,12 @@ function renderWeatherAbisko(data) {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
+  // Register auth listener first — before any awaits — so we never
+  // miss the SIGNED_IN event fired after a Google OAuth redirect.
+  db.auth.onAuthStateChange((_event, newSession) => {
+    updateAuthUI(newSession);
+  });
+
   // Check Supabase connection before trying to load summary data
   try {
     const { error } = await db.from('wellbeing').select('id').limit(1);
@@ -377,13 +383,9 @@ function renderWeatherAbisko(data) {
     return;
   }
 
-  // Check and display current login state
+  // Get the current session
   const { data: { session } } = await db.auth.getSession();
   updateAuthUI(session);
-
-  db.auth.onAuthStateChange((_event, newSession) => {
-    updateAuthUI(newSession);
-  });
 
   // Each section is independent — a failure in one won't break the others
   try { await renderSummary();   } catch (e) { console.error('Summary failed:', e); }
