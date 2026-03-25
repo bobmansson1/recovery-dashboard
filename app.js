@@ -117,7 +117,7 @@ function addGrid(g, yScale, W) {
 async function signIn() {
   await db.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo: window.location.origin + window.location.pathname }
   });
 }
 
