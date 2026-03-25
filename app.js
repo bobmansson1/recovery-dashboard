@@ -220,13 +220,15 @@ async function loadExerciseState() {
   return { date: today, data: exerciseData };
 }
 
-// Flips one circle on or off, saves the updated row, re-renders
-async function toggleExercise(exIdx, circleIdx) {
+// Sets the completion count for one exercise to `newCount`.
+// e.g. setExerciseCount(0, 4) fills sections 1–4 and clears 5–6.
+// Passing newCount = 0 clears all sections.
+async function setExerciseCount(exIdx, newCount) {
   const state = await loadExerciseState();
-  state.data[exIdx][circleIdx] = !state.data[exIdx][circleIdx];
+  const n = CIRCLES_PER_EXERCISE[exIdx];
+  // Build a fresh boolean array: true for every index below newCount
+  state.data[exIdx] = Array.from({ length: n }, (_, i) => i < newCount);
 
-  // upsert = insert if no row exists for (date + exercise_number),
-  //          otherwise update the existing row
   await db.from('exercises').upsert({
     date:            state.date,
     exercise_number: exIdx,
@@ -261,32 +263,69 @@ async function renderExerciseChart() {
   const x = d3.scaleBand().domain(labels).range([0, W]).padding(0.3);
   const y = d3.scaleLinear().domain([0, MAX_TOTAL_CIRCLES]).range([CH, 0]);
 
+  // Gradient definition — light blue at the bottom, dark blue at the top.
+  // gradientUnits="userSpaceOnUse" means y1/y2 are in chart pixels,
+  // so the gradient spans the full chart height regardless of bar size.
+  const defs = g.append('defs');
+  const barGrad = defs.append('linearGradient')
+    .attr('id', 'exBarGrad')
+    .attr('gradientUnits', 'userSpaceOnUse')
+    .attr('x1', 0).attr('y1', CH)  // bottom = lighter
+    .attr('x2', 0).attr('y2', 0);  // top = darker
+  barGrad.append('stop').attr('offset', '0%').attr('stop-color', 'rgba(77,132,245,0.42)');
+  barGrad.append('stop').attr('offset', '100%').attr('stop-color', '#2b5fd9');
+
   addGrid(g, y, W);
 
-  // X axis — every other label to avoid crowding
   g.append('g').attr('transform', `translate(0,${CH})`)
     .call(d3.axisBottom(x).tickValues(labels.filter((_, i) => i % 2 === 0)).tickSize(0))
     .call(a => a.select('.domain').remove())
     .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px').attr('dy', '1.4em');
 
-  // Y axis
   g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(8))
     .call(a => a.select('.domain').remove())
     .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
 
-  // Bar colour: grey = nothing done, amber = partial, blue = most done, teal = all done
-  const pct    = v => MAX_TOTAL_CIRCLES > 0 ? v / MAX_TOTAL_CIRCLES : 0;
-  const barCol = v => pct(v) === 0 ? 'rgba(180,180,180,0.35)' : pct(v) < 0.5 ? '#f59e0b' : pct(v) < 1 ? '#4d84f5' : '#0ab890';
-
-  // Bars grow upward from the bottom on first draw
+  // Bars — grey when empty, gradient blue otherwise. Grow upward on load.
   g.selectAll('rect.bar').data(values).join('rect').attr('class', 'bar')
     .attr('x', (_, i) => x(labels[i])).attr('width', x.bandwidth())
-    .attr('fill', d => barCol(d)).attr('rx', 4)
+    .attr('fill', d => d === 0 ? 'rgba(180,180,180,0.35)' : 'url(#exBarGrad)')
+    .attr('rx', 4)
     .attr('y', y(0)).attr('height', 0)
     .transition().duration(700).ease(d3.easeCubicOut)
     .attr('y', d => y(d)).attr('height', d => y(0) - y(d));
 
-  // Invisible overlay rectangle for tooltip hover detection
+  // Shimmer overlay on 100%-complete bars using SVG <animate> (SMIL).
+  // The shimmer is a narrow bright rect that sweeps across each complete bar.
+  values.forEach((v, i) => {
+    if (v < MAX_TOTAL_CIRCLES) return;
+    const bx = x(labels[i]);
+    const bw = x.bandwidth();
+    const by = y(v);
+    const bh = y(0) - y(v);
+    const sw = bw * 0.55; // shimmer beam width
+
+    // Clip path so the shimmer stays inside the bar's rounded edges
+    const clipId = `exClip${i}`;
+    defs.append('clipPath').attr('id', clipId)
+      .append('rect').attr('x', bx).attr('y', by).attr('width', bw).attr('height', bh).attr('rx', 4);
+
+    // The shimmer rect — starts off the left edge and sweeps right
+    const sr = g.append('rect')
+      .attr('fill', 'rgba(255,255,255,0.42)')
+      .attr('x', bx - sw).attr('y', by)
+      .attr('width', sw).attr('height', bh)
+      .attr('clip-path', `url(#${clipId})`);
+
+    // SMIL animation: moves the x attribute from left-of-bar to right-of-bar, looping
+    sr.append('animate')
+      .attr('attributeName', 'x')
+      .attr('from', bx - sw)
+      .attr('to',   bx + bw + sw)
+      .attr('dur',  '2s')
+      .attr('repeatCount', 'indefinite');
+  });
+
   g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
     .on('mousemove', function(event) {
       const [mx] = d3.pointer(event);
@@ -300,47 +339,65 @@ async function renderExerciseChart() {
 async function renderExercises() {
   const state     = await loadExerciseState();
   const container = document.getElementById('exerciseList');
+  const isOwner   = document.body.classList.contains('owner');
   container.innerHTML = '';
 
   state.data.forEach((circles, exIdx) => {
+    const maxSections = CIRCLES_PER_EXERCISE[exIdx];
+    const filledCount = circles.filter(Boolean).length;
+    const isComplete  = filledCount === maxSections;
+
     const row = document.createElement('div');
     row.className = 'exercise-row';
 
+    // Label on the left
     const label = document.createElement('div');
     label.className   = 'exercise-label';
     label.textContent = EXERCISE_NAMES[exIdx];
     row.appendChild(label);
 
-    const maxCircles  = CIRCLES_PER_EXERCISE[exIdx];
-    const circlesWrap = document.createElement('div');
-    circlesWrap.className = 'exercise-circles';
-    circles.forEach((filled, circleIdx) => {
-      const btn   = document.createElement('button');
-      btn.className = 'circle-btn';
-      btn.title     = filled ? 'Click to unmark' : 'Click to mark done';
+    // Pill — width proportional to section count (40px per section)
+    const pill = document.createElement('div');
+    pill.className  = 'exercise-pill' + (isComplete ? ' complete' : '') + (isOwner ? '' : ' readonly');
+    pill.style.width = `${maxSections * 40}px`;
 
-      const hue = maxCircles > 1 ? Math.round((circleIdx / (maxCircles - 1)) * 120) : 120;
-      if (filled) {
-        btn.style.background  = `hsl(${hue}, 65%, 46%)`;
-        btn.style.borderColor = 'transparent';
-        btn.style.boxShadow   = `0 0 10px hsla(${hue}, 65%, 46%, 0.45)`;
+    // Build one div per section inside the pill
+    for (let i = 0; i < maxSections; i++) {
+      const section = document.createElement('div');
+      section.className = 'pill-section' + (i < filledCount ? ' filled' : '');
+
+      if (isOwner) {
+        // Hover: highlight sections 1..i+1 as a preview of what clicking will do
+        section.addEventListener('mouseenter', () => {
+          pill.querySelectorAll('.pill-section').forEach((s, j) => {
+            s.classList.toggle('preview', j <= i);
+          });
+        });
+
+        // Click: set filled count to i+1, or 0 if already exactly i+1
+        section.addEventListener('click', () => {
+          const clickedN = i + 1;
+          const newCount = filledCount === clickedN ? 0 : clickedN;
+          setExerciseCount(exIdx, newCount);
+        });
       }
 
-      // Only make circles clickable when the owner is logged in
-      if (document.body.classList.contains('owner')) {
-        btn.addEventListener('click', () => toggleExercise(exIdx, circleIdx));
-      } else {
-        btn.style.cursor  = 'default';
-        btn.style.opacity = '0.55';
-      }
-      circlesWrap.appendChild(btn);
-    });
-    row.appendChild(circlesWrap);
+      pill.appendChild(section);
+    }
 
-    const done = circles.filter(Boolean).length;
+    // Clear preview highlight when the mouse leaves the whole pill
+    if (isOwner) {
+      pill.addEventListener('mouseleave', () => {
+        pill.querySelectorAll('.pill-section').forEach(s => s.classList.remove('preview'));
+      });
+    }
+
+    row.appendChild(pill);
+
+    // Progress counter on the right
     const prog = document.createElement('div');
-    prog.className   = 'exercise-progress' + (done === maxCircles ? ' complete' : '');
-    prog.textContent = `${done}/${maxCircles}`;
+    prog.className   = 'exercise-progress' + (isComplete ? ' complete' : '');
+    prog.textContent = `${filledCount}/${maxSections}`;
     row.appendChild(prog);
 
     container.appendChild(row);

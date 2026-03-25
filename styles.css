@@ -354,34 +354,59 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-shrink: 0;
 }
 
-.exercise-circles {
+/* The pill container — the gradient is always baked in as the background.
+   Filled sections become transparent to reveal it; unfilled sections
+   cover it with a light overlay. Width is set proportionally in JS. */
+.exercise-pill {
   display: flex;
-  gap: 9px;
-  flex: 1;
-}
-
-/* Each circle is a <button> element styled as a round toggle */
-.circle-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 2px solid var(--border-hl);
-  background: transparent;
-  cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  height: 28px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(77,132,245,0.38) 0%, #2b5fd9 100%);
+  position: relative;
   flex-shrink: 0;
 }
 
-.circle-btn:hover {
-  border-color: var(--accent);
-  transform: scale(1.15);
+/* Each section inside the pill */
+.pill-section {
+  flex: 1;
+  /* Covers the gradient underneath — the "unfilled" look */
+  background: rgba(238,242,251,0.88);
+  /* Invisible divider: a thin white line between sections */
+  border-left: 1px solid rgba(255,255,255,0.50);
+  transition: background 0.12s;
+}
+.pill-section:first-child { border-left: none; }
+
+/* Filled — transparent so the pill's gradient shows through */
+.pill-section.filled { background: transparent; }
+
+/* Hover preview — sections 1..N light up when hovering section N */
+.pill-section.preview { background: rgba(77,132,245,0.26); }
+
+/* Visitor (not logged in) — no pointer, slightly muted */
+.exercise-pill.readonly .pill-section { cursor: default; opacity: 0.7; }
+
+/* Shimmer sweep — runs continuously when the pill is fully complete.
+   The ::after element is a bright beam that sweeps left to right. */
+.exercise-pill.complete::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255,255,255,0.52) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: pillShimmer 2s linear infinite;
+  pointer-events: none;
 }
 
-/* Filled (completed) state — gradient + subtle glow */
-.circle-btn.filled {
-  background: linear-gradient(135deg, var(--accent), var(--teal));
-  border-color: transparent;
-  box-shadow: 0 0 12px var(--accent-glow);
+@keyframes pillShimmer {
+  0%   { background-position: -100% center; }
+  100% { background-position: 200% center; }
 }
 
 .exercise-progress {
