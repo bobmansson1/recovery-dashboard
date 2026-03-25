@@ -1132,11 +1132,17 @@ input[type="number"] { -moz-appearance: textfield; }
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
+    console.log('🔍 [1] loadGreetings körs. Inloggad som:', currentUser?.name, '| id:', currentUser?.id);
+    console.log('🔍 [2] Hämtar hälsningar sedan:', startOfToday.toISOString());
+
     const { data, error } = await db
       .from('greetings')
       .select('*')
       .gte('created_at', startOfToday.toISOString())
       .order('created_at', { ascending: true });
+
+    console.log('🔍 [3] Resultat från Supabase — rader:', data?.length ?? 'N/A', '| fel:', error);
+    if (data?.length) console.log('🔍 [4] Data:', data);
 
     if (error) throw error;
     const greetings = data || [];
@@ -1248,7 +1254,8 @@ input[type="number"] { -moz-appearance: textfield; }
     appendGreetingItem(mySide, tempRow, myList);
     updateSendLimit();
 
-    // Save to Supabase — no .select() so RLS can't block the return value
+    // Save to Supabase
+    console.log('📤 [5] Försöker spara hälsning:', message, '| sender_id:', currentUser.id);
     const { error } = await db.from('greetings').insert({
       sender_id:   currentUser.id,
       sender_name: currentUser.name,
@@ -1257,8 +1264,9 @@ input[type="number"] { -moz-appearance: textfield; }
     });
 
     if (error) {
-      // Log so it's visible in F12 → Console, but keep the message on screen
-      console.error('Greeting insert failed (check RLS policies + column names):', error);
+      console.error('📤 [6] ❌ INSERT misslyckades:', error);
+    } else {
+      console.log('📤 [6] ✅ INSERT lyckades!');
     }
     // Real id will arrive via Realtime and replace the temp id there
   }
@@ -1267,8 +1275,13 @@ input[type="number"] { -moz-appearance: textfield; }
   // NOTE: requires a DELETE RLS policy on the greetings table:
   //   USING: auth.uid() = sender_id
   async function removeGreeting(id, side) {
+    console.log('🗑️ [7] Försöker ta bort hälsning med id:', id);
     const { error } = await db.from('greetings').delete().eq('id', id);
-    if (error) { console.error('Failed to remove greeting:', error); return; }
+    if (error) {
+      console.error('🗑️ [8] ❌ DELETE misslyckades:', error);
+      return;
+    }
+    console.log('🗑️ [8] ✅ DELETE lyckades!');
 
     const item = document.querySelector(`.greeting-item[data-id="${id}"]`);
     if (item) item.remove();
