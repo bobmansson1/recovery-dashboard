@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Our Space 💛</title>
+  <title>Vår plats 💛</title>
 
 <style>
 /* ============================================================
@@ -776,7 +776,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
   <!-- Auth gate — shown while not logged in or checking session -->
   <div id="authGate">
-    <h1>Our Space 💛</h1>
+    <h1>Vår plats 💛</h1>
     <p>En privat plats, bara för er två.</p>
     <button class="auth-btn" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -817,7 +817,7 @@ input[type="number"] { -moz-appearance: textfield; }
       </div>
 
       <div class="header-title">
-        <h1>Our Space 💛</h1>
+        <h1>Vår plats 💛</h1>
       </div>
 
       <div class="header-right-col">
@@ -1132,12 +1132,14 @@ input[type="number"] { -moz-appearance: textfield; }
      midnight because loadGreetings always queries from today.
      ============================================================ */
   async function loadGreetings() {
-    const today = todayStr();
+    // Use local midnight as UTC so messages don't disappear due to timezone offset
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const { data, error } = await db
       .from('greetings')
       .select('*')
-      .gte('created_at', today + 'T00:00:00')
+      .gte('created_at', startOfToday.toISOString())
       .order('created_at', { ascending: true });
 
     if (error) throw error;
