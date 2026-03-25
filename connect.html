@@ -410,7 +410,8 @@ body {
 
 .greeting-message {
   font-size: 16px;
-  color: var(--amber-soft);
+  font-style: italic;
+  color: var(--text-3);
   line-height: 1.5;
   min-height: 48px;
 }
@@ -467,8 +468,9 @@ body {
   border: 1px solid rgba(255,220,140,0.18);
   border-radius: 20px;
   padding: 11px 18px;
-  color: var(--amber-soft);
+  color: var(--text-3);
   font-size: 14px;
+  font-style: italic;
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
@@ -612,8 +614,9 @@ body {
   padding: 12px 16px;
   border-radius: var(--radius-bubble);
   font-size: 14px;
+  font-style: italic;
   line-height: 1.55;
-  color: var(--amber-soft);
+  color: var(--text-3);
   position: relative;
   transition: opacity 0.3s;
 }
@@ -949,7 +952,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
     document.getElementById('authGate').style.display = 'none';
     document.getElementById('mainPage').style.display = 'block';
-    document.getElementById('backBtn').style.display  = '';
+    document.getElementById('backBtn').style.display  = 'inline-flex';
 
     await initPage();
   });
@@ -970,15 +973,12 @@ input[type="number"] { -moz-appearance: textfield; }
     startClock();
     fetchWeather();
 
-    try {
-      await loadGreetings();
-      await loadJournal();
-      buildCalendar();
-      subscribeRealtime();
-    } catch (e) {
-      console.error('Init error:', e);
-      document.getElementById('errorBanner').style.display = 'block';
-    }
+    // Each section fails independently — one broken query won't block the rest.
+    // Check the browser console (F12) if something looks wrong.
+    try { await loadGreetings(); } catch(e) { console.error('loadGreetings failed:', e); }
+    try { await loadJournal();   } catch(e) { console.error('loadJournal failed:', e); }
+    try { buildCalendar();       } catch(e) { console.error('buildCalendar failed:', e); }
+    try { subscribeRealtime();   } catch(e) { console.error('subscribeRealtime failed:', e); }
   }
 
   /* ============================================================
