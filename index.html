@@ -27,6 +27,8 @@
     <h1>Bob's Recovery Dashboard</h1>
     <div class="header-right">
       <a href="forecast.html" class="nav-btn">Weekly Forecast</a>
+      <!-- Our Space button — only shown for the two permitted accounts, never visible to others -->
+      <a href="connect.html" id="connectBtn" class="connect-btn" style="display:none">Our Space 💛</a>
       <!-- Auth controls — shown/hidden by app.js based on login state -->
       <button id="loginBtn" class="nav-btn" onclick="signIn()" style="display:none">Sign in</button>
       <div id="userInfo" class="user-info" style="display:none">

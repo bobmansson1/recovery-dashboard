@@ -146,6 +146,20 @@ function updateAuthUI(session) {
     userInfo.style.display = 'none';
   }
 
+  // ── OUR SPACE BUTTON ────────────────────────────────────────────
+  // Only show the connect page link for these two Gmail addresses.
+  // !! REPLACE PLACEHOLDERS with real Gmail addresses !!
+  const CONNECT_EMAILS = [
+    'bob.mansson1@gmail.com',      // Bob — replace if needed
+    'PLACEHOLDER_PARTNER@gmail.com', // TODO: add partner's Gmail address
+  ];
+  const connectBtn = document.getElementById('connectBtn');
+  if (connectBtn) {
+    connectBtn.style.display =
+      (session && CONNECT_EMAILS.includes(session.user.email)) ? '' : 'none';
+  }
+  // ────────────────────────────────────────────────────────────────
+
   // Re-render exercises so circle buttons gain/lose click handlers
   renderExercises().catch(() => {});
 }
