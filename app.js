@@ -53,11 +53,54 @@ function showFeedback(id, message) {
   setTimeout(() => { el.style.opacity = '0'; }, 2500);
 }
 
-// Set Chart.js global defaults — only if the CDN loaded successfully
-if (typeof Chart !== 'undefined') {
-  Chart.defaults.color = '#4a5f85';
-  Chart.defaults.borderColor = '#d5dff5';
-  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+/* ──────────────────────────────────────────────────────────────
+   D3 CHART SHARED HELPERS
+
+   These three small utilities are used by all four charts below
+   so we only have to write the setup code once.
+   ────────────────────────────────────────────────────────────── */
+
+// Fixed margins and inner height for every chart.
+// "margin" is the gap around the drawing area so axis labels
+// have room and aren't clipped at the edges.
+const CM = { top: 30, right: 52, bottom: 36, left: 40 };
+const CH = 200; // inner drawing height in pixels
+
+// Clears a container div and returns a ready-to-draw SVG group.
+// Think of the returned `g` as a blank canvas shifted inward by
+// the margins — everything you draw on it is positioned correctly.
+function makeChart(id) {
+  const W = (document.getElementById(id)?.clientWidth || 600) - CM.left - CM.right;
+  d3.select('#' + id).selectAll('*').remove();
+  const svg = d3.select('#' + id).append('svg')
+    .attr('width',  W + CM.left + CM.right)
+    .attr('height', CH + CM.top  + CM.bottom);
+  const g = svg.append('g').attr('transform', `translate(${CM.left},${CM.top})`);
+  return { g, W };
+}
+
+// Shows the shared floating tooltip div near the cursor.
+// `html` is the HTML string to show inside it.
+function showTip(html, event) {
+  const t = document.getElementById('chartTooltip');
+  t.innerHTML = html;
+  t.style.opacity = '1';
+  t.style.left = (event.clientX + 16) + 'px';
+  t.style.top  = (event.clientY - 32) + 'px';
+}
+function hideTip() {
+  document.getElementById('chartTooltip').style.opacity = '0';
+}
+
+// Adds subtle dashed horizontal grid lines to a chart group.
+// These replace the solid grid lines Chart.js drew automatically.
+function addGrid(g, yScale, W) {
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5).tickSize(-W).tickFormat(''))
+    .call(a => {
+      a.select('.domain').remove();
+      a.selectAll('line').attr('stroke', '#d5dff5').attr('stroke-dasharray', '3,3');
+    });
 }
 
 
@@ -193,8 +236,6 @@ async function toggleExercise(exIdx, circleIdx) {
   await renderExercises();
 }
 
-let exerciseChartInst = null;
-
 async function renderExerciseChart() {
   const days = getLastNDays(14);
 
@@ -213,50 +254,46 @@ async function renderExerciseChart() {
     });
   }
 
-  const values = days.map(d => totals[d] !== undefined ? totals[d] : null);
+  const values = days.map(d => totals[d] !== undefined ? totals[d] : 0);
   const labels = days.map(shortLabel);
 
-  const barColors = values.map(v => {
-    if (v === null) return 'rgba(180,180,180,0.2)';
-    const hue = Math.round(Math.min(v / MAX_TOTAL_CIRCLES, 1) * 120);
-    return `hsla(${hue}, 65%, 46%, 0.75)`;
-  });
-  const barBorders = values.map(v => {
-    if (v === null) return 'rgba(180,180,180,0.3)';
-    const hue = Math.round(Math.min(v / MAX_TOTAL_CIRCLES, 1) * 120);
-    return `hsl(${hue}, 65%, 40%)`;
-  });
+  const { g, W } = makeChart('exerciseChart');
+  const x = d3.scaleBand().domain(labels).range([0, W]).padding(0.3);
+  const y = d3.scaleLinear().domain([0, MAX_TOTAL_CIRCLES]).range([CH, 0]);
 
-  if (exerciseChartInst) exerciseChartInst.destroy();
+  addGrid(g, y, W);
 
-  const ctx = document.getElementById('exerciseChart').getContext('2d');
-  exerciseChartInst = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Completed',
-        data: values,
-        backgroundColor: barColors,
-        borderColor: barBorders,
-        borderWidth: 1,
-        borderRadius: 5,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { size: 11 } }, grid: { color: '#d5dff5' } },
-        y: {
-          min: 0, max: MAX_TOTAL_CIRCLES,
-          ticks: { font: { size: 11 }, stepSize: 7 },
-          grid: { color: '#d5dff5' }
-        }
-      }
-    }
-  });
+  // X axis — every other label to avoid crowding
+  g.append('g').attr('transform', `translate(0,${CH})`)
+    .call(d3.axisBottom(x).tickValues(labels.filter((_, i) => i % 2 === 0)).tickSize(0))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px').attr('dy', '1.4em');
+
+  // Y axis
+  g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(8))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
+
+  // Bar colour: grey = nothing done, amber = partial, blue = most done, teal = all done
+  const pct    = v => MAX_TOTAL_CIRCLES > 0 ? v / MAX_TOTAL_CIRCLES : 0;
+  const barCol = v => pct(v) === 0 ? 'rgba(180,180,180,0.35)' : pct(v) < 0.5 ? '#f59e0b' : pct(v) < 1 ? '#4d84f5' : '#0ab890';
+
+  // Bars grow upward from the bottom on first draw
+  g.selectAll('rect.bar').data(values).join('rect').attr('class', 'bar')
+    .attr('x', (_, i) => x(labels[i])).attr('width', x.bandwidth())
+    .attr('fill', d => barCol(d)).attr('rx', 4)
+    .attr('y', y(0)).attr('height', 0)
+    .transition().duration(700).ease(d3.easeCubicOut)
+    .attr('y', d => y(d)).attr('height', d => y(0) - y(d));
+
+  // Invisible overlay rectangle for tooltip hover detection
+  g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event);
+      const idx  = Math.max(0, Math.min(labels.length - 1, Math.floor(mx / x.step())));
+      showTip(`<strong>${labels[idx]}</strong><br>Exercises: ${values[idx]} / ${MAX_TOTAL_CIRCLES}`, event);
+    })
+    .on('mouseleave', hideTip);
 }
 
 // Builds the exercise rows in the DOM, then redraws the chart
@@ -324,8 +361,6 @@ async function renderExercises() {
    "Add Pages" reads today's current total, adds to it, upserts.
    ────────────────────────────────────────────────────────────── */
 
-let readingChartInst = null;
-
 async function addReading() {
   const input = document.getElementById('readingInput');
   const pages = parseInt(input.value, 10);
@@ -382,35 +417,60 @@ async function renderReading() {
   const total = Object.values(allLog).reduce((sum, n) => sum + n, 0);
   document.getElementById('readingTotal').textContent = total.toLocaleString();
 
-  if (readingChartInst) readingChartInst.destroy();
+  const { g, W } = makeChart('readingChart');
+  const x = d3.scalePoint().domain(labels).range([0, W]);
+  const y = d3.scaleLinear().domain([0, d3.max(values) * 1.2 || 10]).nice().range([CH, 0]);
 
-  const ctx = document.getElementById('readingChart').getContext('2d');
-  readingChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Total Pages',
-        data: values,
-        borderColor: '#4d84f5',
-        backgroundColor: 'rgba(77,132,245,0.08)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#4d84f5',
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        tension: 0.35,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { size: 11 } }, grid: { color: '#d5dff5' } },
-        y: { beginAtZero: true, grace: '20%', ticks: { font: { size: 11 } }, grid: { color: '#d5dff5' } }
-      }
-    }
-  });
+  addGrid(g, y, W);
+
+  g.append('g').attr('transform', `translate(0,${CH})`)
+    .call(d3.axisBottom(x).tickValues(labels.filter((_, i) => i % 2 === 0)).tickSize(0))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px').attr('dy', '1.4em');
+
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickSize(0).tickPadding(8))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
+
+  // Gradient definition — fills the area below the line with a blue fade-to-transparent
+  const defs = g.append('defs');
+  const grad = defs.append('linearGradient').attr('id', 'readingGrad')
+    .attr('x1', '0%').attr('y1', '0%').attr('x2', '0%').attr('y2', '100%');
+  grad.append('stop').attr('offset', '0%').attr('stop-color', '#4d84f5').attr('stop-opacity', 0.22);
+  grad.append('stop').attr('offset', '100%').attr('stop-color', '#4d84f5').attr('stop-opacity', 0);
+
+  const curve = d3.curveCatmullRom.alpha(0.5);
+
+  // Area fill drawn first so the line sits on top of it
+  g.append('path').datum(values)
+    .attr('fill', 'url(#readingGrad)')
+    .attr('d', d3.area().x((_, i) => x(labels[i])).y0(y(0)).y1(d => y(d)).curve(curve));
+
+  // Line animates drawing itself left-to-right using stroke-dashoffset
+  const path = g.append('path').datum(values)
+    .attr('fill', 'none').attr('stroke', '#4d84f5').attr('stroke-width', 2.5)
+    .attr('d', d3.line().x((_, i) => x(labels[i])).y(d => y(d)).curve(curve));
+  const len = path.node().getTotalLength();
+  path.attr('stroke-dasharray', len).attr('stroke-dashoffset', len)
+    .transition().duration(900).ease(d3.easeCubicOut).attr('stroke-dashoffset', 0);
+
+  // Small label on the highest reading day
+  const peakIdx = values.indexOf(d3.max(values));
+  if (values[peakIdx] > 0) {
+    g.append('text')
+      .attr('x', x(labels[peakIdx])).attr('y', y(values[peakIdx]) - 10)
+      .attr('fill', '#4d84f5').attr('font-size', '11px').attr('text-anchor', 'middle')
+      .text(values[peakIdx].toLocaleString() + ' pages');
+  }
+
+  g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event);
+      const step = W / (labels.length - 1);
+      const idx  = Math.max(0, Math.min(labels.length - 1, Math.round(mx / step)));
+      showTip(`<strong>${labels[idx]}</strong><br>Total: ${values[idx].toLocaleString()} pages`, event);
+    })
+    .on('mouseleave', hideTip);
 }
 
 
@@ -425,8 +485,6 @@ async function renderReading() {
      motivation 8
      pain       3
    ────────────────────────────────────────────────────────────── */
-
-let wellbeingChartInst = null;
 
 // If today has a saved entry, pre-fill the sliders with it
 async function loadTodayWellbeing() {
@@ -479,29 +537,72 @@ async function renderWellbeing() {
   const motivation = days.map(d => log[d] ? log[d].motivation : null);
   const pain       = days.map(d => log[d] ? log[d].pain       : null);
 
-  if (wellbeingChartInst) wellbeingChartInst.destroy();
+  const { g, W } = makeChart('wellbeingChart');
+  const x = d3.scalePoint().domain(labels).range([0, W]);
+  const y = d3.scaleLinear().domain([0, 12]).range([CH, 0]);
 
-  const ctx = document.getElementById('wellbeingChart').getContext('2d');
-  wellbeingChartInst = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Mood',       data: mood,       borderColor: '#4d84f5', backgroundColor: 'transparent', borderWidth: 2.5, pointBackgroundColor: '#4d84f5', pointRadius: 4, pointHoverRadius: 6, tension: 0.3, spanGaps: true },
-        { label: 'Energy',     data: energy,     borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2.5, pointBackgroundColor: '#f59e0b', pointRadius: 4, pointHoverRadius: 6, tension: 0.3, spanGaps: true },
-        { label: 'Motivation', data: motivation, borderColor: '#0fd9a8', backgroundColor: 'transparent', borderWidth: 2.5, pointBackgroundColor: '#0fd9a8', pointRadius: 4, pointHoverRadius: 6, tension: 0.3, spanGaps: true },
-        { label: 'Pain',       data: pain,       borderColor: '#f87171', backgroundColor: 'transparent', borderWidth: 2.5, pointBackgroundColor: '#f87171', pointRadius: 4, pointHoverRadius: 6, tension: 0.3, spanGaps: true }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: true, labels: { font: { size: 12 }, padding: 20, usePointStyle: true, pointStyle: 'circle' } } },
-      scales: {
-        x: { ticks: { font: { size: 11 } }, grid: { color: '#d5dff5' } },
-        y: { min: 0, max: 11, ticks: { font: { size: 11 }, stepSize: 2 }, grid: { color: '#d5dff5' } }
-      }
-    }
+  addGrid(g, y, W);
+
+  g.append('g').attr('transform', `translate(0,${CH})`)
+    .call(d3.axisBottom(x).tickValues(labels.filter((_, i) => i % 2 === 0)).tickSize(0))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px').attr('dy', '1.4em');
+
+  g.append('g').call(d3.axisLeft(y).ticks(6).tickSize(0).tickPadding(8))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
+
+  const series = [
+    { name: 'Mood',       color: '#4d84f5', vals: mood       },
+    { name: 'Energy',     color: '#f59e0b', vals: energy     },
+    { name: 'Motivation', color: '#0fd9a8', vals: motivation },
+    { name: 'Pain',       color: '#f87171', vals: pain       },
+  ];
+
+  series.forEach((s, si) => {
+    // .defined(d => d !== null) means: don't draw through days with no entry.
+    // Without this, D3 would try to draw a line to "undefined" and break the chart.
+    const lineFn = d3.line()
+      .x((_, i) => x(labels[i])).y(d => y(d))
+      .defined(d => d !== null)
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    // Each line draws itself in with a small stagger so they appear one after another
+    const path = g.append('path').datum(s.vals)
+      .attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', 2.5)
+      .attr('d', lineFn);
+    const len = path.node().getTotalLength();
+    path.attr('stroke-dasharray', len).attr('stroke-dashoffset', len)
+      .transition().delay(si * 120).duration(900).ease(d3.easeCubicOut)
+      .attr('stroke-dashoffset', 0);
+
+    // Dots on each non-null data point
+    g.selectAll(null)
+      .data(s.vals.map((v, i) => ({ v, i })).filter(d => d.v !== null))
+      .join('circle')
+      .attr('cx', d => x(labels[d.i])).attr('cy', d => y(d.v))
+      .attr('r', 3.5).attr('fill', s.color).attr('stroke', '#fff').attr('stroke-width', 1.5);
+
+    // Legend item — positioned in the top margin above the chart area
+    const lx = (W / series.length) * si + (W / series.length) / 2 - 22;
+    g.append('circle').attr('cx', lx).attr('cy', -15).attr('r', 5).attr('fill', s.color);
+    g.append('text').attr('x', lx + 9).attr('y', -11)
+      .attr('fill', '#4a5f85').attr('font-size', '11px').text(s.name);
   });
+
+  g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event);
+      const step = W / (labels.length - 1);
+      const idx  = Math.max(0, Math.min(labels.length - 1, Math.round(mx / step)));
+      showTip(
+        `<strong>${labels[idx]}</strong><br>` +
+        `Mood: ${mood[idx] ?? '—'} &nbsp; Energy: ${energy[idx] ?? '—'}<br>` +
+        `Motivation: ${motivation[idx] ?? '—'} &nbsp; Pain: ${pain[idx] ?? '—'}`,
+        event
+      );
+    })
+    .on('mouseleave', hideTip);
 }
 
 
@@ -513,8 +614,6 @@ async function renderWellbeing() {
      date  "2025-03-24"
      hours 7.5
    ────────────────────────────────────────────────────────────── */
-
-let sleepChartInst = null;
 
 async function saveSleep() {
   const input = document.getElementById('sleepInput');
@@ -550,45 +649,54 @@ async function renderSleep() {
     document.getElementById('sleepInput').value = log[today];
   }
 
-  if (sleepChartInst) sleepChartInst.destroy();
+  const { g, W } = makeChart('sleepChart');
+  const x = d3.scaleBand().domain(labels).range([0, W]).padding(0.3);
+  const y = d3.scaleLinear().domain([0, 12]).range([CH, 0]);
 
-  const ctx = document.getElementById('sleepChart').getContext('2d');
-  sleepChartInst = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          type: 'bar',
-          label: 'Hours Slept',
-          data: values,
-          backgroundColor: 'rgba(77,132,245,0.65)',
-          borderColor: '#4d84f5',
-          borderWidth: 1,
-          borderRadius: 5,
-          borderSkipped: false
-        },
-        {
-          type: 'line',
-          label: '8hr Target',
-          data: Array(14).fill(8),
-          borderColor: 'rgba(15,217,168,0.75)',
-          borderWidth: 2,
-          borderDash: [7, 5],
-          pointRadius: 0,
-          fill: false
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: true, labels: { font: { size: 12 }, padding: 20, usePointStyle: true, pointStyle: 'circle' } } },
-      scales: {
-        x: { ticks: { font: { size: 11 } }, grid: { color: '#d5dff5' } },
-        y: { min: 0, max: 12, ticks: { font: { size: 11 }, stepSize: 2 }, grid: { color: '#d5dff5' } }
-      }
-    }
-  });
+  addGrid(g, y, W);
+
+  g.append('g').attr('transform', `translate(0,${CH})`)
+    .call(d3.axisBottom(x).tickValues(labels.filter((_, i) => i % 2 === 0)).tickSize(0))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px').attr('dy', '1.4em');
+
+  g.append('g').call(d3.axisLeft(y).ticks(5).tickSize(0).tickPadding(8))
+    .call(a => a.select('.domain').remove())
+    .selectAll('text').attr('fill', '#8a9bc0').attr('font-size', '11px');
+
+  // Colour each bar based on hours: red = too little, amber = ok, teal = great
+  const barColor = h => h == null ? 'rgba(180,180,180,0.25)' : h < 6 ? '#f87171' : h <= 8 ? '#f59e0b' : '#0ab890';
+
+  // Bars start at height 0 and animate upward — the "grow from bottom" effect.
+  // In SVG, y=0 is at the TOP of the screen, so we start bars at y(0) (bottom)
+  // and transition their top edge upward to y(d).
+  g.selectAll('rect.bar').data(values).join('rect').attr('class', 'bar')
+    .attr('x', (_, i) => x(labels[i])).attr('width', x.bandwidth())
+    .attr('fill', d => barColor(d)).attr('rx', 4)
+    .attr('y', y(0)).attr('height', 0)
+    .transition().duration(700).ease(d3.easeCubicOut)
+    .attr('y', d => d == null ? y(0) : y(d))
+    .attr('height', d => d == null ? 0 : y(0) - y(d));
+
+  // Dashed 8-hour target line
+  g.append('line')
+    .attr('x1', 0).attr('x2', W).attr('y1', y(8)).attr('y2', y(8))
+    .attr('stroke', 'rgba(10,184,144,0.75)').attr('stroke-width', 2).attr('stroke-dasharray', '7,5');
+  // "Target" label to the right of the chart (in the right margin)
+  g.append('text')
+    .attr('x', W + 6).attr('y', y(8) + 4)
+    .attr('fill', '#0ab890').attr('font-size', '11px').text('Target');
+
+  g.append('rect').attr('width', W).attr('height', CH).attr('fill', 'transparent')
+    .on('mousemove', function(event) {
+      const [mx] = d3.pointer(event);
+      const idx  = Math.max(0, Math.min(labels.length - 1, Math.floor(mx / x.step())));
+      showTip(
+        `<strong>${labels[idx]}</strong><br>Sleep: ${values[idx] != null ? values[idx] + 'h' : '—'}`,
+        event
+      );
+    })
+    .on('mouseleave', hideTip);
 }
 
 
@@ -711,5 +819,18 @@ async function renderTodos() {
   try { await loadTodayWellbeing(); await renderWellbeing();   } catch (e) { console.error('Wellbeing failed:', e); }
   try { await renderSleep();                                   } catch (e) { console.error('Sleep failed:',     e); }
   try { await renderTodos();                                   } catch (e) { console.error('Todos failed:',     e); }
+
+  // Redraw charts if the browser window is resized significantly.
+  // The 40px threshold stops a redraw firing on every single pixel of dragging.
+  let _lastW = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (Math.abs(window.innerWidth - _lastW) > 40) {
+      _lastW = window.innerWidth;
+      renderExercises().catch(() => {});
+      renderReading().catch(() => {});
+      renderWellbeing().catch(() => {});
+      renderSleep().catch(() => {});
+    }
+  });
 
 })();

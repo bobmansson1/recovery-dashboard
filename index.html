@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bob's Recovery Dashboard</title>
 
-  <!-- Chart.js loaded from CDN — this gives us all the chart functionality -->
+  <!-- D3.js v7 loaded from CDN — draws our SVG charts -->
   <script
-    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+    src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
     onerror="document.getElementById('chartError').style.display='block'"
   ></script>
-  <!-- Shown only if Chart.js fails to load (e.g. no internet connection) -->
+  <!-- Shown only if D3 fails to load (e.g. no internet connection) -->
   <div id="chartError" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin:0 36px; font-size:13px; color:#856404;">
     ⚠️ Charts could not load — you may be offline. All tracking inputs still work and your data is safe.
   </div>
@@ -56,8 +56,8 @@
       <div class="card-title">Exercise Tracker</div>
       <!-- JavaScript will build 4 rows of circles inside here -->
       <div class="exercise-list" id="exerciseList"></div>
-      <!-- Chart showing total completed circles per day over 14 days -->
-      <canvas id="exerciseChart" height="110" style="margin-top: 24px;"></canvas>
+      <!-- D3 will inject an SVG chart inside this div -->
+      <div id="exerciseChart" style="margin-top: 24px;"></div>
     </section>
 
     <!-- ── SECTION 2: READING TRACKER ───────────────────────────── -->
@@ -73,7 +73,7 @@
         />
         <button class="btn" onclick="addReading()">Add Pages</button>
       </div>
-      <canvas id="readingChart" height="120"></canvas>
+      <div id="readingChart"></div>
       <p class="reading-total">All-time total: <span id="readingTotal">0</span> pages</p>
     </section>
 
@@ -132,7 +132,7 @@
 
         <!-- Right: the 14-day chart -->
         <div>
-          <canvas id="wellbeingChart"></canvas>
+          <div id="wellbeingChart"></div>
         </div>
 
       </div>
@@ -152,7 +152,7 @@
         />
         <button class="btn" onclick="saveSleep()">Save</button>
       </div>
-      <canvas id="sleepChart" height="150"></canvas>
+      <div id="sleepChart"></div>
       <p class="save-feedback" id="sleepFeedback"></p>
     </section>
 
@@ -175,6 +175,15 @@
     </section>
 
   </main>
+
+  <!-- Shared floating tooltip used by all D3 charts -->
+  <div id="chartTooltip" style="
+    position:fixed; pointer-events:none; opacity:0; transition:opacity 0.15s;
+    background:rgba(255,255,255,0.92); backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.80); border-radius:10px;
+    padding:10px 14px; font-size:13px; color:#0d1a35;
+    box-shadow:0 4px 20px rgba(77,132,245,0.15); max-width:200px; z-index:9999;
+  "></div>
 
   <!-- Supabase client library — must load before app.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
