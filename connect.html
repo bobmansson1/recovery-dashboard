@@ -255,10 +255,11 @@ body {
 .location-block.right { text-align: right; align-items: flex-end; }
 
 .location-name {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--amber-soft);
-  letter-spacing: -0.3px;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
 }
 
 .location-time {
@@ -282,30 +283,37 @@ body {
   text-align: center;
 }
 .header-title h1 {
-  font-size: 22px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--gold);
-  letter-spacing: -0.3px;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
 }
 
-/* Discreet logout — top right corner of the whole page */
-#logoutBtn {
+/* Back to dashboard — top right corner */
+#backBtn {
   position: fixed;
   top: 18px;
   right: 24px;
   z-index: 10;
-  background: none;
-  border: none;
-  color: var(--text-3);
-  font-size: 12px;
+  display: none;
+  background: rgba(245,158,11,0.10);
+  border: 1px solid rgba(245,158,11,0.28);
+  border-radius: 20px;
+  padding: 8px 18px;
+  color: var(--amber-soft);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-decoration: none;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 10px;
-  transition: color 0.2s, background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255,240,180,0.15);
 }
-#logoutBtn:hover {
-  color: var(--text-2);
-  background: rgba(255,255,255,0.06);
+#backBtn:hover {
+  background: rgba(245,158,11,0.20);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.22), inset 0 1px 0 rgba(255,240,180,0.25);
+  transform: translateY(-1px);
 }
 
 /* ============================================================
@@ -402,7 +410,7 @@ body {
 
 .greeting-message {
   font-size: 16px;
-  color: var(--text);
+  color: var(--amber-soft);
   line-height: 1.5;
   min-height: 48px;
 }
@@ -459,7 +467,7 @@ body {
   border: 1px solid rgba(255,220,140,0.18);
   border-radius: 20px;
   padding: 11px 18px;
-  color: var(--text);
+  color: var(--amber-soft);
   font-size: 14px;
   font-family: inherit;
   outline: none;
@@ -605,7 +613,7 @@ body {
   border-radius: var(--radius-bubble);
   font-size: 14px;
   line-height: 1.55;
-  color: var(--text);
+  color: var(--amber-soft);
   position: relative;
   transition: opacity 0.3s;
 }
@@ -720,8 +728,8 @@ input[type="number"] { -moz-appearance: textfield; }
     <small>Signing you out…</small>
   </div>
 
-  <!-- Discreet logout -->
-  <button id="logoutBtn" style="display:none" onclick="signOut()">sign out</button>
+  <!-- Back to dashboard -->
+  <a id="backBtn" href="index.html">← Dashboard</a>
 
   <!-- Main page content — hidden until auth confirmed -->
   <div id="mainPage">
@@ -909,7 +917,7 @@ input[type="number"] { -moz-appearance: textfield; }
       // Not logged in — show the auth gate
       document.getElementById('authGate').style.display = 'flex';
       document.getElementById('mainPage').style.display  = 'none';
-      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('backBtn').style.display = 'none';
       initDone = false;
       return;
     }
@@ -939,9 +947,9 @@ input[type="number"] { -moz-appearance: textfield; }
       color: ALLOWED_USERS[email].color,
     };
 
-    document.getElementById('authGate').style.display  = 'none';
-    document.getElementById('mainPage').style.display  = 'block';
-    document.getElementById('logoutBtn').style.display = 'block';
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('mainPage').style.display = 'block';
+    document.getElementById('backBtn').style.display  = '';
 
     await initPage();
   });
@@ -950,6 +958,15 @@ input[type="number"] { -moz-appearance: textfield; }
      INITIALISATION — runs once after auth is confirmed
      ============================================================ */
   async function initPage() {
+    // Set names immediately from ALLOWED_USERS so the cards never show "…"
+    const emails = Object.keys(ALLOWED_USERS);
+    const personA = ALLOWED_USERS[emails[0]];
+    const personB = ALLOWED_USERS[emails[1]];
+    const nameAEl = document.getElementById('personAName');
+    const nameBEl = document.getElementById('personBName');
+    if (nameAEl) { nameAEl.textContent = personA.name; nameAEl.style.color = personA.color; }
+    if (nameBEl) { nameBEl.textContent = personB.name; nameBEl.style.color = personB.color; }
+
     startClock();
     fetchWeather();
 
@@ -1425,9 +1442,8 @@ input[type="number"] { -moz-appearance: textfield; }
         payload => handleNewJournalEntry(payload.new)
       )
       .subscribe(status => {
-        if (status === 'CHANNEL_ERROR') {
-          document.getElementById('errorBanner').style.display = 'block';
-        }
+        // Log realtime status quietly — a connection hiccup doesn't break the page
+        if (status === 'CHANNEL_ERROR') console.warn('Realtime channel error — live updates may be delayed.');
       });
   }
 
