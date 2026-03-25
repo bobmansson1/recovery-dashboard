@@ -290,18 +290,18 @@ body {
   letter-spacing: 1.4px;
 }
 
-/* Back to dashboard — top right corner */
+/* Back to dashboard — top left corner */
 #backBtn {
   position: fixed;
   top: 18px;
-  right: 24px;
+  left: 24px;
   z-index: 10;
   display: none;
   background: rgba(245,158,11,0.10);
   border: 1px solid rgba(245,158,11,0.28);
   border-radius: 20px;
   padding: 8px 18px;
-  color: var(--amber-soft);
+  color: var(--amber);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -426,6 +426,65 @@ body {
   color: var(--text-3);
   font-style: italic;
 }
+
+/* List of up to 3 messages inside each greeting card */
+.greeting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 48px;
+}
+
+.greeting-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.greeting-item-text {
+  flex: 1;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+.greeting-item-time {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  padding-top: 3px;
+  opacity: 0.7;
+}
+
+/* Small × button to remove your own greeting */
+.remove-greeting {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.remove-greeting:hover { opacity: 1; color: var(--amber); }
+
+/* Shown when user has reached the 3-message limit */
+.greeting-limit {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-3);
+  text-align: center;
+  margin-top: 6px;
+  display: none;
+}
+
+/* Disabled input / button when at limit */
+.warm-input:disabled { opacity: 0.35; cursor: not-allowed; }
+.warm-btn:disabled   { opacity: 0.35; cursor: not-allowed; }
 
 /* Preset quick-tap buttons */
 .preset-buttons {
@@ -784,8 +843,9 @@ input[type="number"] { -moz-appearance: textfield; }
             <span class="person-name" id="personAName">…</span>
             <span class="greeting-dot" id="personADot" title="Sent a greeting today"></span>
           </div>
-          <p class="greeting-message greeting-empty" id="personAMessage">Nothing yet today — say hello 🌤</p>
-          <p class="greeting-time" id="personATime"></p>
+          <div class="greeting-list" id="personAList">
+            <p class="greeting-empty">Nothing yet today — say hello 🌤</p>
+          </div>
         </div>
 
         <div class="glass-card greeting-card" id="personBCard">
@@ -793,8 +853,9 @@ input[type="number"] { -moz-appearance: textfield; }
             <span class="person-name" id="personBName">…</span>
             <span class="greeting-dot" id="personBDot" title="Sent a greeting today"></span>
           </div>
-          <p class="greeting-message greeting-empty" id="personBMessage">Nothing yet today — say hello 🌤</p>
-          <p class="greeting-time" id="personBTime"></p>
+          <div class="greeting-list" id="personBList">
+            <p class="greeting-empty">Nothing yet today — say hello 🌤</p>
+          </div>
         </div>
 
       </div>
@@ -815,8 +876,9 @@ input[type="number"] { -moz-appearance: textfield; }
             placeholder="Write your own message…"
             onkeydown="if(event.key==='Enter') sendGreeting()"
           />
-          <button class="warm-btn" onclick="sendGreeting()">Send 💛</button>
+          <button class="warm-btn" id="greetingSendBtn" onclick="sendGreeting()">Send 💛</button>
         </div>
+        <p class="greeting-limit" id="greetingLimitMsg">3 sent today — remove one to add a new message</p>
       </div>
 
     </section>
@@ -1057,64 +1119,103 @@ input[type="number"] { -moz-appearance: textfield; }
 
   /* ============================================================
      SECTION 1 — GREETINGS
+     Up to 3 messages per person per day. Resets naturally at
+     midnight because loadGreetings always queries from today.
      ============================================================ */
   async function loadGreetings() {
     const today = todayStr();
 
-    // Fetch the most recent greeting from each person today
     const { data, error } = await db
       .from('greetings')
       .select('*')
       .gte('created_at', today + 'T00:00:00')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
 
     if (error) throw error;
     const greetings = data || [];
 
-    // Work out who the two people are from ALLOWED_USERS
     const emails  = Object.keys(ALLOWED_USERS);
     const personA = { email: emails[0], ...ALLOWED_USERS[emails[0]] };
     const personB = { email: emails[1], ...ALLOWED_USERS[emails[1]] };
 
-    // Find each person's latest greeting today
-    const greetingA = greetings.find(g => g.sender_name === personA.name);
-    const greetingB = greetings.find(g => g.sender_name === personB.name);
+    // Show up to 3 messages per person, oldest first
+    renderGreetingCard('A', personA, greetings.filter(g => g.sender_name === personA.name).slice(0, 3));
+    renderGreetingCard('B', personB, greetings.filter(g => g.sender_name === personB.name).slice(0, 3));
 
-    renderGreetingCard('A', personA, greetingA);
-    renderGreetingCard('B', personB, greetingB);
-
-    // New-greeting detection: check if partner sent something since last visit
+    // Trigger ripple if partner sent something since last visit
     const lastVisit = localStorage.getItem(LAST_VISIT_KEY) || '1970-01-01T00:00:00Z';
-    const partnerGreeting = greetings.find(g =>
+    const partnerNew = greetings.find(g =>
       g.sender_name !== currentUser.name &&
       new Date(g.created_at) > new Date(lastVisit)
     );
-    if (partnerGreeting) triggerRipple();
-
-    // Update last visit time AFTER the check so next visit is fresh
+    if (partnerNew) triggerRipple();
     localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString());
+
+    updateSendLimit();
   }
 
-  function renderGreetingCard(side, person, greeting) {
-    const msgEl  = document.getElementById(`person${side}Message`);
-    const timeEl = document.getElementById(`person${side}Time`);
+  // Renders a greeting card — accepts an array of up to 3 greetings
+  function renderGreetingCard(side, person, greetings) {
+    const listEl = document.getElementById(`person${side}List`);
     const dotEl  = document.getElementById(`person${side}Dot`);
-    const nameEl = document.getElementById(`person${side}Name`);
+    listEl.innerHTML = '';
 
-    nameEl.textContent = person.name;
-    nameEl.style.color = person.color;
-
-    if (greeting) {
-      msgEl.textContent = greeting.message;
-      msgEl.classList.remove('greeting-empty');
-      timeEl.textContent = formatTime(greeting.created_at);
-      dotEl.classList.add('sent');
-    } else {
-      msgEl.textContent = 'Nothing yet today — say hello 🌤';
-      msgEl.classList.add('greeting-empty');
-      timeEl.textContent = '';
+    if (!greetings.length) {
+      const empty = document.createElement('p');
+      empty.className = 'greeting-empty';
+      empty.textContent = 'Nothing yet today — say hello 🌤';
+      listEl.appendChild(empty);
       dotEl.classList.remove('sent');
+      return;
     }
+
+    dotEl.classList.add('sent');
+    greetings.forEach(g => appendGreetingItem(side, g, listEl));
+  }
+
+  // Builds one message row inside a greeting card
+  function appendGreetingItem(side, greeting, container) {
+    const isMine = greeting.sender_name === currentUser.name;
+
+    const item = document.createElement('div');
+    item.className = 'greeting-item';
+    item.dataset.id = greeting.id;
+
+    const textEl = document.createElement('span');
+    textEl.className = 'greeting-item-text';
+    textEl.textContent = greeting.message;
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'greeting-item-time';
+    timeEl.textContent = formatTime(greeting.created_at);
+
+    item.appendChild(textEl);
+    item.appendChild(timeEl);
+
+    // Only show the remove button on your own messages
+    if (isMine) {
+      const btn = document.createElement('button');
+      btn.className = 'remove-greeting';
+      btn.textContent = '×';
+      btn.title = 'Remove';
+      btn.onclick = () => removeGreeting(greeting.id, side);
+      item.appendChild(btn);
+    }
+
+    container.appendChild(item);
+  }
+
+  // Disables the send controls when current user is at the 3-message limit
+  function updateSendLimit() {
+    const emails = Object.keys(ALLOWED_USERS);
+    const mySide = emails[0] === currentUser.email ? 'A' : 'B';
+    const myList = document.getElementById(`person${mySide}List`);
+    const count  = myList ? myList.querySelectorAll('.greeting-item').length : 0;
+    const atLimit = count >= 3;
+
+    document.getElementById('greetingInput').disabled     = atLimit;
+    document.getElementById('greetingSendBtn').disabled   = atLimit;
+    document.getElementById('greetingLimitMsg').style.display = atLimit ? '' : 'none';
   }
 
   async function sendGreeting(presetMessage = null, isPreset = false) {
@@ -1122,50 +1223,94 @@ input[type="number"] { -moz-appearance: textfield; }
     const message = presetMessage || input.value.trim();
     if (!message) return;
 
-    // Optimistic update — show immediately on our own card
-    const side = Object.keys(ALLOWED_USERS)[0] === currentUser.email ? 'A' : 'B';
-    const msgEl  = document.getElementById(`person${side}Message`);
-    const timeEl = document.getElementById(`person${side}Time`);
-    const dotEl  = document.getElementById(`person${side}Dot`);
-    msgEl.textContent = message;
-    msgEl.classList.remove('greeting-empty');
-    timeEl.textContent = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-    dotEl.classList.add('sent');
+    const emails = Object.keys(ALLOWED_USERS);
+    const mySide = emails[0] === currentUser.email ? 'A' : 'B';
+    const myList = document.getElementById(`person${mySide}List`);
+
+    // Enforce limit
+    if (myList.querySelectorAll('.greeting-item').length >= 3) return;
 
     if (!presetMessage) input.value = '';
 
+    // Optimistic entry — appears immediately with a temp id
+    const tempId  = 'pending-' + Date.now();
+    const tempRow = { id: tempId, sender_name: currentUser.name, message, created_at: new Date().toISOString() };
+    const emptyEl = myList.querySelector('.greeting-empty');
+    if (emptyEl) emptyEl.remove();
+    document.getElementById(`person${mySide}Dot`).classList.add('sent');
+    appendGreetingItem(mySide, tempRow, myList);
+    updateSendLimit();
+
     // Save to Supabase
-    const { error } = await db.from('greetings').insert({
+    const { data, error } = await db.from('greetings').insert({
       sender_id:   currentUser.id,
       sender_name: currentUser.name,
-      message:     message,
+      message,
       is_preset:   isPreset,
-    });
+    }).select().single();
 
     if (error) {
       console.error('Failed to send greeting:', error);
-      document.getElementById('errorBanner').style.display = 'block';
+      // Roll back the optimistic entry
+      const pending = myList.querySelector(`[data-id="${tempId}"]`);
+      if (pending) pending.remove();
+      if (!myList.querySelector('.greeting-item')) {
+        const empty = document.createElement('p');
+        empty.className = 'greeting-empty';
+        empty.textContent = 'Nothing yet today — say hello 🌤';
+        myList.appendChild(empty);
+        document.getElementById(`person${mySide}Dot`).classList.remove('sent');
+      }
+      updateSendLimit();
+      return;
     }
+
+    // Replace temp id with real id so the remove button works
+    const pendingEl = myList.querySelector(`[data-id="${tempId}"]`);
+    if (pendingEl) pendingEl.dataset.id = data.id;
+  }
+
+  // Deletes a greeting from Supabase and removes it from the DOM.
+  // NOTE: requires a DELETE RLS policy on the greetings table:
+  //   USING: auth.uid() = sender_id
+  async function removeGreeting(id, side) {
+    const { error } = await db.from('greetings').delete().eq('id', id);
+    if (error) { console.error('Failed to remove greeting:', error); return; }
+
+    const item = document.querySelector(`.greeting-item[data-id="${id}"]`);
+    if (item) item.remove();
+
+    // If no messages remain, show the empty state
+    const list = document.getElementById(`person${side}List`);
+    if (list && !list.querySelector('.greeting-item')) {
+      const empty = document.createElement('p');
+      empty.className = 'greeting-empty';
+      empty.textContent = 'Nothing yet today — say hello 🌤';
+      list.appendChild(empty);
+      document.getElementById(`person${side}Dot`).classList.remove('sent');
+    }
+
+    updateSendLimit();
   }
 
   function handleNewGreeting(row) {
-    // Called by Realtime when any greeting is inserted
-    const emails = Object.keys(ALLOWED_USERS);
+    const emails      = Object.keys(ALLOWED_USERS);
     const senderEmail = emails.find(e => ALLOWED_USERS[e].name === row.sender_name);
-    const side = senderEmail === emails[0] ? 'A' : 'B';
+    const side        = senderEmail === emails[0] ? 'A' : 'B';
+    const list        = document.getElementById(`person${side}List`);
 
-    const msgEl  = document.getElementById(`person${side}Message`);
-    const timeEl = document.getElementById(`person${side}Time`);
-    const dotEl  = document.getElementById(`person${side}Dot`);
+    // Ignore if we already have this entry (own optimistic insert)
+    if (list.querySelector(`[data-id="${row.id}"]`)) return;
+    // Ignore if this side is already at limit
+    if (list.querySelectorAll('.greeting-item').length >= 3) return;
 
-    // Only update display if this is a new message (not our own optimistic one)
-    if (row.sender_name !== currentUser.name) {
-      msgEl.textContent = row.message;
-      msgEl.classList.remove('greeting-empty');
-      timeEl.textContent = formatTime(row.created_at);
-      dotEl.classList.add('sent');
-      triggerRipple();
-    }
+    const emptyEl = list.querySelector('.greeting-empty');
+    if (emptyEl) emptyEl.remove();
+    document.getElementById(`person${side}Dot`).classList.add('sent');
+    appendGreetingItem(side, row, list);
+
+    if (row.sender_name !== currentUser.name) triggerRipple();
+    updateSendLimit();
   }
 
   function triggerRipple() {
