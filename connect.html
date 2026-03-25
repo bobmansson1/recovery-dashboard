@@ -938,7 +938,11 @@ input[type="number"] { -moz-appearance: textfield; }
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbXdrdGFlYnhwa2JsZHJic2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjAzNDksImV4cCI6MjA4OTkzNjM0OX0.k0PXIoofcgvQCmHie_bChux6VexPsDqNt5T8_tvvDOI';
 
   const { createClient } = window.supabase;
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // storageKey gives connect.html its own auth storage so it never competes
+  // with the dashboard tab for the same token-refresh lock.
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { storageKey: 'sb-connect' }
+  });
 
   /* ============================================================
      PERMITTED USERS
@@ -984,7 +988,27 @@ input[type="number"] { -moz-appearance: textfield; }
   // onAuthStateChange is the single source of truth — same pattern as app.js
   db.auth.onAuthStateChange(async (_event, session) => {
     if (!session) {
-      // Not logged in — show the auth gate
+      // No session in sb-connect storage. Before showing the login screen,
+      // check if the user is already logged in on the dashboard (which uses
+      // the default storage key). If so, copy that session here so the user
+      // doesn't have to log in twice.
+      const raw = localStorage.getItem('sb-zamwktaebxpkbldrbseh-auth-token');
+      if (raw) {
+        try {
+          const s = JSON.parse(raw);
+          if (s?.access_token && s?.refresh_token) {
+            // setSession stores the token in sb-connect and fires a new
+            // onAuthStateChange event with the real session — we return here
+            // and let that second event do the rest.
+            await db.auth.setSession({
+              access_token:  s.access_token,
+              refresh_token: s.refresh_token,
+            });
+            return;
+          }
+        } catch(e) { /* ignore parse errors */ }
+      }
+      // Genuinely not logged in — show the auth gate
       document.getElementById('authGate').style.display = 'flex';
       document.getElementById('mainPage').style.display  = 'none';
       document.getElementById('backBtn').style.display = 'none';
@@ -1132,17 +1156,11 @@ input[type="number"] { -moz-appearance: textfield; }
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    console.log('🔍 [1] loadGreetings körs. Inloggad som:', currentUser?.name, '| id:', currentUser?.id);
-    console.log('🔍 [2] Hämtar hälsningar sedan:', startOfToday.toISOString());
-
     const { data, error } = await db
       .from('greetings')
       .select('*')
       .gte('created_at', startOfToday.toISOString())
       .order('created_at', { ascending: true });
-
-    console.log('🔍 [3] Resultat från Supabase — rader:', data?.length ?? 'N/A', '| fel:', error);
-    if (data?.length) console.log('🔍 [4] Data:', data);
 
     if (error) throw error;
     const greetings = data || [];
@@ -1255,7 +1273,6 @@ input[type="number"] { -moz-appearance: textfield; }
     updateSendLimit();
 
     // Save to Supabase
-    console.log('📤 [5] Försöker spara hälsning:', message, '| sender_id:', currentUser.id);
     const { error } = await db.from('greetings').insert({
       sender_id:   currentUser.id,
       sender_name: currentUser.name,
@@ -1264,9 +1281,7 @@ input[type="number"] { -moz-appearance: textfield; }
     });
 
     if (error) {
-      console.error('📤 [6] ❌ INSERT misslyckades:', error);
-    } else {
-      console.log('📤 [6] ✅ INSERT lyckades!');
+      console.error('Greeting insert failed:', error);
     }
     // Real id will arrive via Realtime and replace the temp id there
   }
@@ -1275,13 +1290,8 @@ input[type="number"] { -moz-appearance: textfield; }
   // NOTE: requires a DELETE RLS policy on the greetings table:
   //   USING: auth.uid() = sender_id
   async function removeGreeting(id, side) {
-    console.log('🗑️ [7] Försöker ta bort hälsning med id:', id);
     const { error } = await db.from('greetings').delete().eq('id', id);
-    if (error) {
-      console.error('🗑️ [8] ❌ DELETE misslyckades:', error);
-      return;
-    }
-    console.log('🗑️ [8] ✅ DELETE lyckades!');
+    if (error) { console.error('Failed to remove greeting:', error); return; }
 
     const item = document.querySelector(`.greeting-item[data-id="${id}"]`);
     if (item) item.remove();
