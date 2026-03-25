@@ -50,9 +50,9 @@ body::before {
   left: -15%;
   width: 75%;
   height: 75%;
-  background: radial-gradient(ellipse, rgba(77,132,245,0.55) 0%, transparent 65%);
+  background: radial-gradient(ellipse, rgba(77,132,245,0.28) 0%, transparent 65%);
   border-radius: 50%;
-  filter: blur(28px);
+  filter: blur(38px);
   animation: blobDrift1 18s ease-in-out infinite alternate;
   z-index: -1;
   pointer-events: none;
@@ -65,9 +65,9 @@ body::after {
   right: -15%;
   width: 70%;
   height: 70%;
-  background: radial-gradient(ellipse, rgba(10,184,144,0.48) 0%, transparent 65%);
+  background: radial-gradient(ellipse, rgba(10,184,144,0.20) 0%, transparent 65%);
   border-radius: 50%;
-  filter: blur(28px);
+  filter: blur(38px);
   animation: blobDrift2 24s ease-in-out infinite alternate;
   z-index: -1;
   pointer-events: none;
@@ -90,7 +90,7 @@ body::after {
 body {
   /* A third subtle highlight blob baked into the background — no JS, no extra elements */
   background:
-    radial-gradient(ellipse 420px 300px at 64% 6%, rgba(126,184,255,0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 420px 300px at 64% 6%, rgba(126,184,255,0.16) 0%, transparent 70%),
     var(--bg);
   background-attachment: fixed;
   color: var(--text);
