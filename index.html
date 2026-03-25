@@ -63,15 +63,15 @@
     <!-- ── SECTION 2: READING TRACKER ───────────────────────────── -->
     <section class="card">
       <div class="card-title">Reading Tracker</div>
-      <div class="reading-input-row owner-only">
+      <div class="input-pill owner-only">
         <input
-          class="text-input"
           type="number"
           id="readingInput"
           placeholder="Pages read this session"
           min="1"
+          onkeydown="if(event.key==='Enter') addReading()"
         />
-        <button class="btn" onclick="addReading()">Add Pages</button>
+        <button class="pill-btn" onclick="addReading()">Add Pages</button>
       </div>
       <div id="readingChart"></div>
       <p class="reading-total">All-time total: <span id="readingTotal">0</span> pages</p>
@@ -125,7 +125,7 @@
               oninput="document.getElementById('painVal').textContent = this.value" />
           </div>
 
-          <button class="btn" onclick="saveWellbeing()">Save Today's Ratings</button>
+          <button class="btn-pill" onclick="saveWellbeing()">Save Today's Ratings</button>
           <p class="save-feedback" id="wellbeingFeedback"></p>
 
         </div>
@@ -141,16 +141,18 @@
     <!-- ── SECTION 4: SLEEP TRACKER ─────────────────────────────── -->
     <section class="card">
       <div class="card-title">Sleep Tracker</div>
-      <div class="sleep-input-row owner-only">
-        <label for="sleepInput">Hours slept last night:</label>
-        <input
-          class="text-input"
-          type="number"
-          id="sleepInput"
-          placeholder="e.g. 7.5"
-          min="0" max="24" step="0.25"
-        />
-        <button class="btn" onclick="saveSleep()">Save</button>
+      <div class="sleep-input-wrapper owner-only">
+        <label for="sleepInput">Hours slept last night</label>
+        <div class="input-pill">
+          <input
+            type="number"
+            id="sleepInput"
+            placeholder="e.g. 7.5"
+            min="0" max="24" step="0.25"
+            onkeydown="if(event.key==='Enter') saveSleep()"
+          />
+          <button class="pill-btn" onclick="saveSleep()">Save</button>
+        </div>
       </div>
       <div id="sleepChart"></div>
       <p class="save-feedback" id="sleepFeedback"></p>
@@ -159,15 +161,14 @@
     <!-- ── SECTION 5: TO-DO LIST ─────────────────────────────────── -->
     <section class="card">
       <div class="card-title">To-Do List</div>
-      <div class="todo-input-row owner-only">
+      <div class="input-pill todo-input-row owner-only">
         <input
-          class="text-input"
           type="text"
           id="todoInput"
           placeholder="Add a task…"
-          onkeydown="if (event.key === 'Enter') addTodo()"
+          onkeydown="if(event.key==='Enter') addTodo()"
         />
-        <button class="btn" onclick="addTodo()">Add</button>
+        <button class="pill-btn" onclick="addTodo()">Add</button>
       </div>
       <p class="todo-count" id="todoCount">0 tasks remaining</p>
       <!-- JavaScript builds the task items inside here -->
