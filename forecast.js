@@ -365,8 +365,8 @@ function renderWeatherAbisko(data) {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  // Register auth listener first — before any awaits — so we never
-  // miss the SIGNED_IN event fired after a Google OAuth redirect.
+  // onAuthStateChange is the single source of truth for auth state.
+  // Handles both returning visits (INITIAL_SESSION) and fresh OAuth logins (SIGNED_IN).
   db.auth.onAuthStateChange((_event, newSession) => {
     updateAuthUI(newSession);
   });
@@ -377,15 +377,10 @@ function renderWeatherAbisko(data) {
     if (error) throw error;
   } catch {
     showOfflineBanner();
-    // Weather doesn't use Supabase — still try to load it
     try { fetchWeather();       } catch (e) { console.error('Kalmar weather failed:', e); }
     try { fetchWeatherAbisko(); } catch (e) { console.error('Abisko weather failed:', e); }
     return;
   }
-
-  // Get the current session
-  const { data: { session } } = await db.auth.getSession();
-  updateAuthUI(session);
 
   // Each section is independent — a failure in one won't break the others
   try { await renderSummary();   } catch (e) { console.error('Summary failed:', e); }
