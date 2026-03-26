@@ -938,11 +938,8 @@ input[type="number"] { -moz-appearance: textfield; }
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbXdrdGFlYnhwa2JsZHJic2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjAzNDksImV4cCI6MjA4OTkzNjM0OX0.k0PXIoofcgvQCmHie_bChux6VexPsDqNt5T8_tvvDOI';
 
   const { createClient } = window.supabase;
-  // storageKey gives connect.html its own auth storage so it never competes
-  // with the dashboard tab for the same token-refresh lock.
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { storageKey: 'sb-connect' }
-  });
+  // No custom storageKey — shares the same session as the dashboard automatically.
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   /* ============================================================
      PERMITTED USERS
@@ -988,27 +985,7 @@ input[type="number"] { -moz-appearance: textfield; }
   // onAuthStateChange is the single source of truth — same pattern as app.js
   db.auth.onAuthStateChange(async (_event, session) => {
     if (!session) {
-      // No session in sb-connect storage. Before showing the login screen,
-      // check if the user is already logged in on the dashboard (which uses
-      // the default storage key). If so, copy that session here so the user
-      // doesn't have to log in twice.
-      const raw = localStorage.getItem('sb-zamwktaebxpkbldrbseh-auth-token');
-      if (raw) {
-        try {
-          const s = JSON.parse(raw);
-          if (s?.access_token && s?.refresh_token) {
-            // setSession stores the token in sb-connect and fires a new
-            // onAuthStateChange event with the real session — we return here
-            // and let that second event do the rest.
-            await db.auth.setSession({
-              access_token:  s.access_token,
-              refresh_token: s.refresh_token,
-            });
-            return;
-          }
-        } catch(e) { /* ignore parse errors */ }
-      }
-      // Genuinely not logged in — show the auth gate
+      // Not logged in — show the auth gate
       document.getElementById('authGate').style.display = 'flex';
       document.getElementById('mainPage').style.display  = 'none';
       document.getElementById('backBtn').style.display = 'none';
@@ -1272,18 +1249,30 @@ input[type="number"] { -moz-appearance: textfield; }
     appendGreetingItem(mySide, tempRow, myList);
     updateSendLimit();
 
-    // Save to Supabase
-    const { error } = await db.from('greetings').insert({
+    // Save to Supabase — fetch the real row back so we get the actual DB id
+    const { data, error } = await db.from('greetings').insert({
       sender_id:   currentUser.id,
       sender_name: currentUser.name,
       message,
       is_preset:   isPreset,
-    });
+    }).select().single();
 
     if (error) {
       console.error('Greeting insert failed:', error);
+      // Remove the optimistic entry so the user knows it didn't save
+      const pendingItem = myList.querySelector(`[data-id="${tempId}"]`);
+      if (pendingItem) pendingItem.remove();
+      updateSendLimit();
+      return;
     }
-    // Real id will arrive via Realtime and replace the temp id there
+
+    // Replace the temporary pending id with the real DB id so the × button works
+    const pendingItem = myList.querySelector(`[data-id="${tempId}"]`);
+    if (pendingItem) {
+      pendingItem.dataset.id = data.id;
+      const removeBtn = pendingItem.querySelector('.remove-greeting');
+      if (removeBtn) removeBtn.onclick = () => removeGreeting(data.id, mySide);
+    }
   }
 
   // Deletes a greeting from Supabase and removes it from the DOM.
