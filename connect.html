@@ -938,8 +938,11 @@ input[type="number"] { -moz-appearance: textfield; }
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbXdrdGFlYnhwa2JsZHJic2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjAzNDksImV4cCI6MjA4OTkzNjM0OX0.k0PXIoofcgvQCmHie_bChux6VexPsDqNt5T8_tvvDOI';
 
   const { createClient } = window.supabase;
-  // No custom storageKey — shares the same session as the dashboard automatically.
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Separate storageKey so connect.html and the dashboard don't compete for
+  // the same token-refresh lock (which causes "Lock was stolen" errors).
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { storageKey: 'sb-connect' }
+  });
 
   /* ============================================================
      PERMITTED USERS
@@ -985,7 +988,27 @@ input[type="number"] { -moz-appearance: textfield; }
   // onAuthStateChange is the single source of truth — same pattern as app.js
   db.auth.onAuthStateChange(async (_event, session) => {
     if (!session) {
-      // Not logged in — show the auth gate
+      // No session in sb-connect yet. Try to copy a FRESH (non-expired)
+      // session from the dashboard tab, which keeps its own token alive.
+      try {
+        const raw = localStorage.getItem('sb-zamwktaebxpkbldrbseh-auth-token');
+        if (raw) {
+          const s = JSON.parse(raw);
+          const nowSec = Math.floor(Date.now() / 1000);
+          // Only copy if the access token has at least 60 seconds left —
+          // if it's expired, setSession would need to refresh it over the
+          // network which risks a token conflict with the dashboard.
+          if (s?.access_token && s?.refresh_token && s?.expires_at > nowSec + 60) {
+            await db.auth.setSession({
+              access_token:  s.access_token,
+              refresh_token: s.refresh_token,
+            });
+            return; // second onAuthStateChange fires with the real session
+          }
+        }
+      } catch(e) { /* ignore parse errors */ }
+
+      // No usable session found — show the login screen
       document.getElementById('authGate').style.display = 'flex';
       document.getElementById('mainPage').style.display  = 'none';
       document.getElementById('backBtn').style.display = 'none';
