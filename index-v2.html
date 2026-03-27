@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bobs Återhämtningsdashboard</title>
+
+  <!--
+    D3.js — ritar SVG-diagram (oförändrat från original)
+    Om CDN misslyckas visas #chartError-bannern
+  -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
+    onerror="document.getElementById('chartError').style.display='block'"
+  ></script>
+  <div
+    id="chartError"
+    style="
+      display:none;
+      background:rgba(245,158,11,0.12);
+      border:1px solid rgba(245,158,11,0.28);
+      border-radius:12px;
+      padding:12px 18px;
+      margin:0 36px;
+      font-size:13px;
+      color:#fbbf24;
+    "
+  >
+    ⚠️ Diagram kunde inte laddas — du kanske är offline. Alla inmatningar
+    fungerar fortfarande och din data är säker.
+  </div>
+
+  <!--
+    Google Fonts:
+    - Inter  → all UI-text, siffror, etiketter
+    - Caveat → används av forecast-sidan, laddas här för konsekvens
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+  /* =============================================================
+     DESIGN TOKENS — "Polar Night" (samma palett som forecast-v2)
+     ============================================================= */
+  :root {
+    /* Bakgrund */
+    --bg:     #060b14;
+    --bg-2:   #0c1422;
+
+    /* Kort */
+    --card:        rgba(255,255,255,0.045);
+    --card-border: rgba(255,255,255,0.08);
+    --card-hover:  rgba(255,255,255,0.075);
+
+    /* Accentfärger */
+    --blue:    #4d84f5;
+    --amber:   #f59e0b;
+    --teal:    #0ab890;
+    --rose:    #f87171;
+    --emerald: #10b981;
+    --purple:  #a78bfa;
+
+    /* Typografi */
+    --text:   #e8edf5;
+    --text-2: #6b80a8;
+    --text-3: #38496b;
+
+    /* Övrigt */
+    --radius:    20px;
+    --radius-sm: 12px;
+    --border:    rgba(255,255,255,0.10);
+    --danger:    #f87171;
+    --warn:      #f59e0b;
+  }
+
+  /* =============================================================
+     RESET
+     ============================================================= */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* =============================================================
+     AURORA-ORBAR — blå (övre vänster) + lila (nedre höger)
+     ============================================================= */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%; left: -15%;
+    width: 75%; height: 75%;
+    background: radial-gradient(ellipse, rgba(77,132,245,0.20) 0%, transparent 65%);
+    border-radius: 50%;
+    filter: blur(64px);
+    animation: blobDrift1 22s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -15%; right: -10%;
+    width: 65%; height: 65%;
+    background: radial-gradient(ellipse, rgba(10,184,144,0.14) 0%, transparent 65%);
+    border-radius: 50%;
+    filter: blur(64px);
+    animation: blobDrift2 28s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  @keyframes blobDrift1 {
+    0%   { transform: translate(0,   0)   scale(1);    }
+    50%  { transform: translate(18%, 20%) scale(1.10); }
+    100% { transform: translate(30%, 8%)  scale(0.92); }
+  }
+  @keyframes blobDrift2 {
+    0%   { transform: translate(0,    0)    scale(1);    }
+    50%  { transform: translate(-18%, -12%) scale(1.12); }
+    100% { transform: translate(-8%,  -25%) scale(0.95); }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 28px 36px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* =============================================================
+     SIDHUVUD
+     ============================================================= */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    animation: fadeSlideUp 0.4s ease-out both 0s;
+  }
+
+  .site-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(120deg, #e8edf5 0%, var(--blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .date-badge {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.09);
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-2);
+    letter-spacing: 0.3px;
+  }
+
+  .nav-btn {
+    color: var(--blue);
+    background: rgba(77,132,245,0.10);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(77,132,245,0.22);
+    border-radius: 20px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .nav-btn:hover {
+    background: rgba(77,132,245,0.20);
+    border-color: rgba(77,132,245,0.45);
+    transform: translateY(-1px);
+  }
+
+  .user-info { display: flex; align-items: center; gap: 8px; }
+  .user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.14);
+    object-fit: cover;
+  }
+
+  /* =============================================================
+     OFFLINE-BANNER
+     ============================================================= */
+  #offlineBanner {
+    background: rgba(245,158,11,0.10);
+    border: 1px solid rgba(245,158,11,0.28);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #fbbf24;
+  }
+
+  /* Besökartips — döljs när ägaren loggar in */
+  .edit-hint {
+    font-size: 12px;
+    color: var(--text-3);
+    text-align: right;
+    margin-bottom: 8px;
+  }
+  body.owner .edit-hint { display: none; }
+
+  /* =============================================================
+     HUVUD-GRID — 2 kolumner, välmåendekortet spänner hela bredden
+     ============================================================= */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .card-wellbeing { grid-column: 1 / -1; }
+
+  /* =============================================================
+     KORTBAS — frostat mörkt glas
+     ============================================================= */
+  .card {
+    background: var(--card);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 26px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    background: var(--card-hover);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  /* Glödande topplinje vid hover */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 5%,
+      var(--blue) 50%,
+      transparent 95%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 1; }
+
+  /* Etikett i kortets topp */
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--text-3);
+    margin-bottom: 20px;
+  }
+
+  /* =============================================================
+     LADDNINGSANIMATIONER — staggerad fade-in
+     ============================================================= */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .dashboard-grid > *:nth-child(1) { animation: fadeSlideUp 0.4s ease-out both 0.08s; }
+  .dashboard-grid > *:nth-child(2) { animation: fadeSlideUp 0.4s ease-out both 0.16s; }
+  .dashboard-grid > *:nth-child(3) { animation: fadeSlideUp 0.4s ease-out both 0.24s; }
+  .dashboard-grid > *:nth-child(4) { animation: fadeSlideUp 0.4s ease-out both 0.32s; }
+  .dashboard-grid > *:nth-child(5) { animation: fadeSlideUp 0.4s ease-out both 0.40s; }
+
+  /* =============================================================
+     KNAPPAR — primär-knapp med blå glasstil
+     ============================================================= */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    color: var(--blue);
+    background: rgba(77,132,245,0.12);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(77,132,245,0.28);
+    border-radius: 20px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    background: rgba(77,132,245,0.22);
+    border-color: rgba(77,132,245,0.50);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(77,132,245,0.20);
+  }
+  .btn:active { transform: translateY(0); }
+
+  /* =============================================================
+     TEXTINMATNING — frostat mörkt glas
+     ============================================================= */
+  .text-input {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .text-input::placeholder { color: var(--text-3); }
+
+  .text-input:focus {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(77,132,245,0.45);
+    box-shadow: 0 0 0 3px rgba(77,132,245,0.10);
+  }
+
+  /* Dölj spinner på number-input */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* Bekräftelsetext efter sparning */
+  .save-feedback {
+    font-size: 12px;
+    color: var(--teal);
+    margin-top: 8px;
+    min-height: 18px;
+    transition: opacity 0.4s;
+  }
+
+  /* =============================================================
+     AUTENTISERING — owner-only-element
+     ============================================================= */
+  .owner-only { display: none; }
+  body.owner .owner-only { display: flex; }
+
+  /* =============================================================
+     SEKTION 1 — TRÄNINGSLOGG
+     ============================================================= */
+  .exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .exercise-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .exercise-label {
+    font-size: 13px;
+    color: var(--text-2);
+    width: 88px;
+    flex-shrink: 0;
+  }
+
+  /* Pill-behållare — gradient baked in */
+  .exercise-pill {
+    display: flex;
+    height: 28px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(90deg, rgba(77,132,245,0.38) 0%, #2b5fd9 100%);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .pill-section {
+    flex: 1;
+    background: rgba(6,11,20,0.75);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.12s;
+    cursor: pointer;
+  }
+  .pill-section:first-child { border-left: none; }
+  .pill-section.filled      { background: transparent; }
+  .pill-section.preview     { background: rgba(77,132,245,0.30); }
+
+  .exercise-pill.readonly .pill-section { cursor: default; }
+
+  /* Shimmer vid 100 % */
+  .exercise-pill.complete::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 20%,
+      rgba(255,255,255,0.40) 50%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    animation: pillShimmer 2s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes pillShimmer {
+    0%   { background-position: -100% center; }
+    100% { background-position:  200% center; }
+  }
+
+  .exercise-progress {
+    font-size: 12px;
+    color: var(--text-3);
+    width: 44px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .exercise-progress.complete { color: var(--teal); }
+
+  /* =============================================================
+     SEKTION 2 — LÄSLOGG
+     ============================================================= */
+  .reading-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .reading-input-row .text-input { flex: 1; }
+
+  .reading-total {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--text-2);
+    text-align: center;
+  }
+  .reading-total span { color: var(--text); font-weight: 600; }
+
+  /* =============================================================
+     SEKTION 3 — VÄLMÅENDELOGG
+     ============================================================= */
+  .wellbeing-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* Utan ägarbehörighet — diagrammet tar hela bredden */
+  body:not(.owner) .wellbeing-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .wellbeing-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .slider-label { font-size: 13px; color: var(--text-2); }
+
+  /* Siffran till höger om slidern */
+  .slider-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 28px;
+    text-align: right;
+    line-height: 1;
+  }
+
+  /* Slider-spår */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* Slider-tumme */
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(77,132,245,0.50);
+    transition: transform 0.12s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+  /* Unika thumbfärger per metric */
+  input[type="range"].mood-slider::-webkit-slider-thumb       { background: var(--blue);    box-shadow: 0 0 10px rgba(77,132,245,0.50);   }
+  input[type="range"].energy-slider::-webkit-slider-thumb     { background: var(--amber);   box-shadow: 0 0 10px rgba(245,158,11,0.50);   }
+  input[type="range"].motivation-slider::-webkit-slider-thumb { background: var(--teal);    box-shadow: 0 0 10px rgba(10,184,144,0.50);   }
+  input[type="range"].pain-slider::-webkit-slider-thumb       { background: var(--rose);    box-shadow: 0 0 10px rgba(248,113,113,0.50);  }
+
+  /* =============================================================
+     SEKTION 4 — SÖMNLOGG
+     ============================================================= */
+  .sleep-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .sleep-input-row label { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+  .sleep-input-row .text-input { width: 110px; }
+
+  /* =============================================================
+     SEKTION 5 — ATT-GÖRA-LISTA
+     ============================================================= */
+  .todo-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .todo-input-row .text-input { flex: 1; }
+
+  .todo-count {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 12px;
+  }
+
+  /* Scrollbar för uppgiftslistan */
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.10) transparent;
+  }
+  .todo-list::-webkit-scrollbar         { width: 4px; }
+  .todo-list::-webkit-scrollbar-track   { background: transparent; }
+  .todo-list::-webkit-scrollbar-thumb   { background: rgba(255,255,255,0.10); border-radius: 2px; }
+
+  /* Enskild uppgiftsrad */
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+    user-select: none;
+  }
+  .todo-item:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  /* Klar-state: nedtonad + genomstruken text */
+  .todo-item.done          { opacity: 0.35; }
+  .todo-item.done .todo-text { text-decoration: line-through; }
+
+  .todo-text { flex: 1; font-size: 14px; }
+
+  /* Radera-knapp */
+  .todo-delete {
+    background: none;
+    border: none;
+    color: var(--text-3);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 2px;
+    line-height: 1;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .todo-delete:hover { color: var(--danger); }
+
+  /* =============================================================
+     TILLGÄNGLIGHET — respektera rörelsepreferens
+     ============================================================= */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* =============================================================
+     RESPONSIV — surfplatta (≤ 900px)
+     ============================================================= */
+  @media (max-width: 900px) {
+    body { padding: 20px 20px 60px; }
+
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .card-wellbeing  { grid-column: 1; }
+
+    .wellbeing-layout { grid-template-columns: 1fr; }
+  }
+
+  /* =============================================================
+     RESPONSIV — mobil (≤ 520px)
+     ============================================================= */
+  @media (max-width: 520px) {
+    body { padding: 16px 14px 60px; }
+    .site-header h1 { font-size: 20px; }
+  }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       SIDHUVUD
+       ============================================================ -->
+  <header class="site-header">
+    <h1>Bob's Recovery Dashboard</h1>
+    <div class="header-right">
+      <a href="forecast.html" class="nav-btn">Veckoprognos</a>
+      <button id="loginBtn" class="nav-btn" onclick="signIn()" style="display:none">
+        Logga in
+      </button>
+      <div id="userInfo" class="user-info" style="display:none">
+        <img id="userAvatar" class="user-avatar" src="" alt="Du" />
+        <button class="nav-btn" onclick="signOut()">Logga ut</button>
+      </div>
+      <div class="date-badge" id="headerDate">Laddar…</div>
+    </div>
+  </header>
+
+  <!-- Visas om databasen inte kan nås -->
+  <div id="offlineBanner" style="display:none;">
+    ⚠️ Kunde inte ansluta till databasen. Kontrollera din internetanslutning
+    och ladda om sidan. Din data är säker.
+  </div>
+
+  <!-- Tips för besökare som inte är inloggade -->
+  <p class="edit-hint">Logga in för att redigera</p>
+
+  <!-- ============================================================
+       HUVUD-GRID — fem sektioner
+       ============================================================ -->
+  <main class="dashboard-grid">
+
+    <!-- ── SEKTION 1: TRÄNINGSLOGG ──────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Träningslogg</div>
+      <!-- JavaScript bygger 4 rader med cirklar här -->
+      <div class="exercise-list" id="exerciseList"></div>
+      <!-- D3 injicerar ett SVG-diagram här -->
+      <div id="exerciseChart" style="margin-top:24px"></div>
+    </section>
+
+    <!-- ── SEKTION 2: LÄSLOGG ───────────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Läslogg</div>
+      <div class="reading-input-row owner-only">
+        <input
+          class="text-input"
+          type="number"
+          id="readingInput"
+          placeholder="Sidor lästa denna session"
+          min="1"
+          onkeydown="if(event.key==='Enter') addReading()"
+        />
+        <button class="btn" onclick="addReading()">Lägg till sidor</button>
+      </div>
+      <div id="readingChart"></div>
+      <p class="reading-total">
+        Totalt antal: <span id="readingTotal">0</span> sidor
+      </p>
+    </section>
+
+    <!-- ── SEKTION 3: VÄLMÅENDELOGG (full bredd) ────────────── -->
+    <section class="card card-wellbeing">
+      <div class="card-title">Välmåendelogg</div>
+      <div class="wellbeing-layout">
+        <!-- Vänster: fyra betygsgliders -->
+        <div class="wellbeing-inputs owner-only">
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Humör</span>
+              <span class="slider-value" id="moodVal">5</span>
+            </div>
+            <input
+              type="range"
+              class="mood-slider"
+              id="moodSlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('moodVal').textContent = this.value"
+            />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Energi</span>
+              <span class="slider-value" id="energyVal">5</span>
+            </div>
+            <input
+              type="range"
+              class="energy-slider"
+              id="energySlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('energyVal').textContent = this.value"
+            />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Motivation</span>
+              <span class="slider-value" id="motivationVal">5</span>
+            </div>
+            <input
+              type="range"
+              class="motivation-slider"
+              id="motivationSlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('motivationVal').textContent = this.value"
+            />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <span class="slider-label">Smärtnivå</span>
+              <span class="slider-value" id="painVal">5</span>
+            </div>
+            <input
+              type="range"
+              class="pain-slider"
+              id="painSlider"
+              min="1" max="10" value="5"
+              oninput="document.getElementById('painVal').textContent = this.value"
+            />
+          </div>
+
+          <button class="btn" onclick="saveWellbeing()">
+            Spara dagens betyg
+          </button>
+          <p class="save-feedback" id="wellbeingFeedback"></p>
+        </div>
+
+        <!-- Höger: 14-dagarsdiagram -->
+        <div>
+          <div id="wellbeingChart"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SEKTION 4: SÖMNLOGG ──────────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Sömnlogg</div>
+      <div class="sleep-input-row owner-only">
+        <label for="sleepInput">Timmar sömn förra natten:</label>
+        <input
+          class="text-input"
+          type="number"
+          id="sleepInput"
+          placeholder="t.ex. 7,5"
+          min="0" max="24" step="0.25"
+          onkeydown="if(event.key==='Enter') saveSleep()"
+        />
+        <button class="btn" onclick="saveSleep()">Spara</button>
+      </div>
+      <div id="sleepChart"></div>
+      <p class="save-feedback" id="sleepFeedback"></p>
+    </section>
+
+    <!-- ── SEKTION 5: ATT-GÖRA-LISTA ────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Att-göra-lista</div>
+      <div class="todo-input-row owner-only">
+        <input
+          class="text-input"
+          type="text"
+          id="todoInput"
+          placeholder="Lägg till en uppgift…"
+          onkeydown="if(event.key==='Enter') addTodo()"
+        />
+        <button class="btn" onclick="addTodo()">Lägg till</button>
+      </div>
+      <p class="todo-count" id="todoCount">0 uppgifter kvar</p>
+      <!-- JavaScript bygger uppgiftsraderna här -->
+      <div class="todo-list" id="todoList"></div>
+    </section>
+
+  </main>
+
+  <!--
+    Delad flytande tooltip som används av alla D3-diagram.
+    Mörkt tema i stället för vit bakgrund.
+  -->
+  <div
+    id="chartTooltip"
+    style="
+      position: fixed;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      background: rgba(12,20,34,0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: #e8edf5;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.40);
+      max-width: 200px;
+      z-index: 9999;
+    "
+  ></div>
+
+  <!-- Supabase-klienten måste laddas innan app.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Samma JS-logik som originalfilen — alla element-ID:n är oförändrade -->
+  <script src="app.js"></script>
+</body>
+</html>
