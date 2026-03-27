@@ -3,17 +3,549 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Veckoprognos — Bobs Återhämtning</title>
+  <title>Veckoprognos v2 — Bobs Återhämtning</title>
 
-  <!-- Shared styles used by both pages (variables, reset, body, header, cards) -->
-  <link rel="stylesheet" href="styles.css" />
-  <!-- Forecast-specific styles (page layout, stat cards, weather, spinner) -->
-  <link rel="stylesheet" href="forecast.css" />
+  <!--
+    Google Fonts:
+    - Inter      → siffror, etiketter, all UI-text
+    - Caveat     → personliga/handskrivna texter (veckans humör)
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+  /* =============================================================
+     DESIGN TOKENS — "Polar Night"
+     Ett mörkt, atmosfäriskt tema inspirerat av Abiskos natthimmel.
+     Färgade accenter per datakort ger snabb visuell koppling.
+     ============================================================= */
+  :root {
+    /* Bakgrund */
+    --bg:     #060b14;
+    --bg-2:   #0c1422;
+
+    /* Kort */
+    --card:        rgba(255,255,255,0.045);
+    --card-border: rgba(255,255,255,0.08);
+    --card-hover:  rgba(255,255,255,0.075);
+
+    /* Accentfärger (en per stat-kort + väder) */
+    --blue:    #4d84f5;
+    --amber:   #f59e0b;
+    --teal:    #0ab890;
+    --rose:    #f87171;
+    --emerald: #10b981;
+    --purple:  #a78bfa;
+
+    /* Typografi */
+    --text:   #e8edf5;
+    --text-2: #6b80a8;
+    --text-3: #38496b;
+
+    /* Övrigt */
+    --radius:    20px;
+    --radius-sm: 12px;
+    --danger:    #f87171;
+  }
+
+  /* =============================================================
+     RESET
+     ============================================================= */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* =============================================================
+     AURORA-ORBAR — samma teknik som styles.css men mörkare
+     Orb 1: blå (övre vänster), Orb 2: lila (nedre höger)
+     ============================================================= */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%; left: -15%;
+    width: 75%; height: 75%;
+    background: radial-gradient(ellipse, rgba(77,132,245,0.20) 0%, transparent 65%);
+    border-radius: 50%;
+    filter: blur(64px);
+    animation: blobDrift1 22s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -15%; right: -10%;
+    width: 65%; height: 65%;
+    background: radial-gradient(ellipse, rgba(167,139,250,0.16) 0%, transparent 65%);
+    border-radius: 50%;
+    filter: blur(64px);
+    animation: blobDrift2 28s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  @keyframes blobDrift1 {
+    0%   { transform: translate(0,   0)   scale(1);    }
+    50%  { transform: translate(18%, 20%) scale(1.10); }
+    100% { transform: translate(30%, 8%)  scale(0.92); }
+  }
+  @keyframes blobDrift2 {
+    0%   { transform: translate(0,    0)    scale(1);    }
+    50%  { transform: translate(-18%, -12%) scale(1.12); }
+    100% { transform: translate(-8%,  -25%) scale(0.95); }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 28px 36px 80px;
+    position: relative;
+    /* z-index 1 lyfter innehållet ovanför orb-pseudoelementen */
+    z-index: 1;
+  }
+
+  /* =============================================================
+     SIDHUVUD
+     ============================================================= */
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    animation: fadeSlideUp 0.4s ease-out both 0s;
+  }
+
+  .site-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    /* Gradient: vit → blå */
+    background: linear-gradient(120deg, #e8edf5 0%, var(--blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Datum-badge: frostat glas */
+  .date-badge {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.09);
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-2);
+    letter-spacing: 0.3px;
+  }
+
+  /* Nav-knappar: blå glasspill */
+  .nav-btn {
+    color: var(--blue);
+    background: rgba(77,132,245,0.10);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(77,132,245,0.22);
+    border-radius: 20px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .nav-btn:hover {
+    background: rgba(77,132,245,0.20);
+    border-color: rgba(77,132,245,0.45);
+    transform: translateY(-1px);
+  }
+
+  /* Användarinfo (avatar + logga ut) */
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.14);
+    object-fit: cover;
+  }
+
+  /* =============================================================
+     OFFLINE-BANNER
+     ============================================================= */
+  #offlineBanner {
+    background: rgba(245,158,11,0.10);
+    border: 1px solid rgba(245,158,11,0.28);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #fbbf24;
+  }
+
+  /* =============================================================
+     SIDSTACK — vertikalt staplade sektioner
+     ============================================================= */
+  .page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Staggerad inladdningsanimation */
+  .page-stack > *:nth-child(1) { animation: fadeSlideUp 0.4s ease-out both 0.08s; }
+  .page-stack > *:nth-child(2) { animation: fadeSlideUp 0.4s ease-out both 0.16s; }
+  .page-stack > *:nth-child(3) { animation: fadeSlideUp 0.4s ease-out both 0.24s; }
+  .page-stack > *:nth-child(4) { animation: fadeSlideUp 0.4s ease-out both 0.32s; }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* =============================================================
+     KORTBAS — frostat mörkt glas
+     ============================================================= */
+  .card {
+    background: var(--card);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card:hover {
+    background: var(--card-hover);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  /* Glödande topplinje visas vid hover — färg sätts per kort via --card-accent */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 5%,
+      var(--card-accent, var(--blue)) 50%,
+      transparent 95%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 1; }
+
+  /* Kortets etikettrad — liten, versaler, urluttad */
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: var(--text-3);
+    margin-bottom: 20px;
+  }
+
+  /* =============================================================
+     MOTIVERANDE MEDDELANDE-KORT
+     ============================================================= */
+  #messageCard {
+    /* Blå-lila gradient som bakgrund — sticker ut bland datakorten */
+    background: linear-gradient(
+      135deg,
+      rgba(77,132,245,0.10) 0%,
+      rgba(167,139,250,0.07) 100%
+    );
+    border-color: rgba(77,132,245,0.18);
+    --card-accent: var(--blue);
+  }
+
+  .message-icon {
+    font-size: 26px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  /* Caveat-typsnittet ger ett personligt, handskrivet utseende */
+  .message-text {
+    font-family: 'Caveat', cursive;
+    font-size: 23px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .message-week {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 12px;
+    letter-spacing: 0.3px;
+  }
+
+  /* =============================================================
+     STATISTIKKORT — 3×2 bento-grid (bättre än 6-i-rad)
+     Varje kort har en unik accentfärg via data-stat-attributet.
+     ============================================================= */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .stat-card { padding: 22px 20px; }
+
+  /* Accentfärg per stat-typ */
+  .stat-card[data-stat="mood"]       { --card-accent: var(--blue);    --stat-color: var(--blue);    }
+  .stat-card[data-stat="energy"]     { --card-accent: var(--amber);   --stat-color: var(--amber);   }
+  .stat-card[data-stat="motivation"] { --card-accent: var(--teal);    --stat-color: var(--teal);    }
+  .stat-card[data-stat="pain"]       { --card-accent: var(--rose);    --stat-color: var(--rose);    }
+  .stat-card[data-stat="pages"]      { --card-accent: var(--emerald); --stat-color: var(--emerald); }
+  .stat-card[data-stat="sleep"]      { --card-accent: var(--purple);  --stat-color: var(--purple);  }
+
+  /* Subtil glödande glob i nedre hörnet av varje stat-kort */
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: -24px; right: -24px;
+    width: 110px; height: 110px;
+    background: radial-gradient(circle, var(--stat-color, var(--blue)) 0%, transparent 70%);
+    opacity: 0.06;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .stat-card:hover::after { opacity: 0.14; }
+
+  /* Etikett i akcentfärg — ersätter den blå accent från ursprungssidan */
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.3px;
+    color: var(--stat-color, var(--blue));
+    margin-bottom: 10px;
+  }
+
+  /* Storsiffra — viktad och tajt (editorial-känsla) */
+  .stat-value {
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .stat-value.no-data {
+    color: var(--text-3);
+    font-size: 34px;
+    letter-spacing: 0;
+  }
+
+  .stat-unit {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 7px;
+  }
+
+  /* =============================================================
+     VÄDERKORT — atmosfärisk och dramatisk layout
+     ============================================================= */
+  #weatherCard { --card-accent: var(--blue);   }
+  #abiskoCard  { --card-accent: var(--purple); }
+
+  /* Tvåkolumnslayout: nuläge till vänster, 7-dagar till höger */
+  .weather-inner {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 32px;
+    align-items: center;
+  }
+
+  /* Väderikon (emoji från JS) */
+  .current-weather-icon {
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  /* Stor temperatur — lätt vikt för luftig känsla */
+  .current-temp {
+    font-size: 76px;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -4px;
+    color: var(--text);
+  }
+
+  .current-temp sup {
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: 0;
+    vertical-align: super;
+    color: var(--text-2);
+  }
+
+  .current-condition {
+    font-size: 14px;
+    color: var(--text-2);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+
+  /* Ort — liten versaltext under temperaturen */
+  .current-location {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    color: var(--text-3);
+    margin-top: 8px;
+  }
+
+  /* 7-dagarsprognos-strip */
+  .forecast-strip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    align-self: center;
+  }
+
+  /* Enskild dag-tile — mörkt frostat glas */
+  .forecast-day {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius-sm);
+    padding: 14px 6px;
+    text-align: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+
+  .forecast-day:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.13);
+    transform: translateY(-2px);
+  }
+
+  .forecast-day-name {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-3);
+  }
+
+  .forecast-icon {
+    font-size: 24px;
+    margin: 10px 0 6px;
+    display: block;
+  }
+
+  .forecast-hi {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .forecast-lo {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+
+  /* Laddnings- och felstatus */
+  .weather-status {
+    padding: 16px 0;
+    font-size: 14px;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .weather-status.error { color: var(--danger); }
+
+  /* Spinner: mörk ram + blå toppsegment */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.08);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* =============================================================
+     TILLGÄNGLIGHET — respektera rörelsepreferens
+     ============================================================= */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* =============================================================
+     RESPONSIV — surfplatta (≤ 900px)
+     ============================================================= */
+  @media (max-width: 900px) {
+    body { padding: 20px 20px 60px; }
+
+    /* Väderkort: stapla nuläge + prognos vertikalt */
+    .weather-inner {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .current-temp { font-size: 60px; }
+  }
+
+  /* =============================================================
+     RESPONSIV — mobil (≤ 520px)
+     ============================================================= */
+  @media (max-width: 520px) {
+    body { padding: 16px 14px 60px; }
+
+    .site-header h1 { font-size: 20px; }
+
+    /* Statistikkort: 2 kolumner på mobil */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* Prognos-strip: visa 4 dagar på smal skärm */
+    .forecast-strip { grid-template-columns: repeat(4, 1fr); }
+
+    .current-temp { font-size: 52px; }
+  }
+  </style>
 </head>
 <body>
 
   <!-- ============================================================
-       HEADER
+       SIDHUVUD
        ============================================================ -->
   <header class="site-header">
     <h1>Veckoprognos</h1>
@@ -28,18 +560,17 @@
     </div>
   </header>
 
-
-  <!-- Shown if the database cannot be reached -->
-  <div id="offlineBanner" style="display:none; background:#fff3cd; border:1px solid #f0ad4e; border-radius:8px; padding:12px 18px; margin-bottom:24px; font-size:13px; color:#856404;">
+  <!-- Visas om databasen inte kan nås -->
+  <div id="offlineBanner" style="display:none;">
     ⚠️ Kunde inte ansluta till databasen. Kontrollera din internetanslutning och ladda om sidan.
   </div>
 
   <!-- ============================================================
-       PAGE CONTENT
+       SIDINNEHÅLL
        ============================================================ -->
   <div class="page-stack">
 
-    <!-- Motivational message -->
+    <!-- Motiverande meddelande -->
     <div class="card" id="messageCard">
       <div class="card-title">Veckans humör</div>
       <span class="message-icon" id="messageIcon">💬</span>
@@ -47,40 +578,40 @@
       <p class="message-week" id="messageWeek"></p>
     </div>
 
-    <!-- 6 stat cards -->
+    <!-- 6 statistikkort i 3×2 bento-grid -->
     <div class="stats-grid">
 
-      <div class="card stat-card">
+      <div class="card stat-card" data-stat="mood">
         <div class="stat-label">Medelhumör</div>
         <div class="stat-value no-data" id="statMood">—</div>
         <div class="stat-unit">av 10</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card" data-stat="energy">
         <div class="stat-label">Medelenergi</div>
         <div class="stat-value no-data" id="statEnergy">—</div>
         <div class="stat-unit">av 10</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card" data-stat="motivation">
         <div class="stat-label">Motivation</div>
         <div class="stat-value no-data" id="statMotivation">—</div>
         <div class="stat-unit">av 10</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card" data-stat="pain">
         <div class="stat-label">Smärtnivå</div>
         <div class="stat-value no-data" id="statPain">—</div>
         <div class="stat-unit">av 10</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card" data-stat="pages">
         <div class="stat-label">Sidor lästa</div>
         <div class="stat-value no-data" id="statPages">—</div>
         <div class="stat-unit">denna vecka</div>
       </div>
 
-      <div class="card stat-card">
+      <div class="card stat-card" data-stat="sleep">
         <div class="stat-label">Medelsömn</div>
         <div class="stat-value no-data" id="statSleep">—</div>
         <div class="stat-unit">timmar / natt</div>
@@ -88,7 +619,7 @@
 
     </div>
 
-    <!-- Kalmar weather -->
+    <!-- Väder — Kalmar -->
     <div class="card" id="weatherCard">
       <div class="card-title">Väder — Kalmar, Sverige</div>
       <div class="weather-status" id="weatherStatus">
@@ -108,7 +639,7 @@
       </div>
     </div>
 
-    <!-- Abisko weather -->
+    <!-- Väder — Abisko -->
     <div class="card" id="abiskoCard">
       <div class="card-title">Väder — Abisko, Svenska Lappland</div>
       <div class="weather-status" id="abiskoStatus">
@@ -130,10 +661,9 @@
 
   </div><!-- end .page-stack -->
 
-
-  <!-- Supabase client library — must load before forecast.js -->
+  <!-- Supabase-klienten måste laddas innan forecast.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Forecast logic -->
+  <!-- Samma JS-logik som originalfilen — alla element-ID:n är oförändrade -->
   <script src="forecast.js"></script>
 </body>
 </html>
