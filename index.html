@@ -374,7 +374,11 @@
   /* =============================================================
      AUTENTISERING — owner-only-element
      ============================================================= */
-  .owner-only { display: none; }
+  /* body:not(.owner) har högre specificitet än enskilda klasser
+     som .reading-input-row, .sleep-input-row etc. — dessa har
+     display:flex definierat och skulle annars vinna om de kommer
+     senare i stilarket och specificiteteten är samma. */
+  body:not(.owner) .owner-only { display: none; }
   body.owner .owner-only { display: flex; }
 
   /* =============================================================
