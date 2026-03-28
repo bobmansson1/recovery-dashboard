@@ -272,6 +272,27 @@
   }
 
   /* =============================================================
+     TOPPRADEN — humörkort (70%) + övningskort (30%) sida vid sida
+     ============================================================= */
+  /* Samma grid som .stats-grid (3 kolumner, gap 16px) så att
+     övningskortet (1 kol) blir exakt lika bred som korten under */
+  .top-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  /* Humörkortet tar 2 av 3 kolumner → övningskortet tar den sista */
+  #messageCard { grid-column: span 2; }
+
+  /* På mobil: stapla vertikalt, humörkortet tar hela bredden */
+  @media (max-width: 700px) {
+    .top-row { grid-template-columns: 1fr; }
+    #messageCard { grid-column: span 1; }
+  }
+
+  /* =============================================================
      MOTIVERANDE MEDDELANDE-KORT
      ============================================================= */
   #messageCard {
@@ -283,6 +304,12 @@
     );
     border-color: rgba(77,132,245,0.18);
     --card-accent: var(--blue);
+  }
+
+  /* Accentfärg för övningskortet — emerald (träning/hälsa) */
+  .stat-card[data-stat="exercises"] {
+    --card-accent: var(--emerald);
+    --stat-color:  var(--emerald);
   }
 
   .message-icon {
@@ -570,12 +597,24 @@
        ============================================================ -->
   <div class="page-stack">
 
-    <!-- Motiverande meddelande -->
-    <div class="card" id="messageCard">
-      <div class="card-title">Veckans humör</div>
-      <span class="message-icon" id="messageIcon">💬</span>
-      <p class="message-text" id="messageText">Laddar din veckosammanfattning…</p>
-      <p class="message-week" id="messageWeek"></p>
+    <!-- Toppraden: humörkort (70%) + övningskort (30%) -->
+    <div class="top-row">
+
+      <!-- Motiverande meddelande -->
+      <div class="card" id="messageCard">
+        <div class="card-title">Veckans humör</div>
+        <span class="message-icon" id="messageIcon">💬</span>
+        <p class="message-text" id="messageText">Laddar din veckosammanfattning…</p>
+        <p class="message-week" id="messageWeek"></p>
+      </div>
+
+      <!-- Snitt övningar senaste veckan -->
+      <div class="card stat-card" data-stat="exercises">
+        <div class="stat-label">Snitt övningar</div>
+        <div class="stat-value no-data" id="statExercises">—</div>
+        <div class="stat-unit">rep / dag</div>
+      </div>
+
     </div>
 
     <!-- 6 statistikkort i 3×2 bento-grid -->

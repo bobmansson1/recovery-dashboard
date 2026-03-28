@@ -143,11 +143,12 @@ function wmoToInfo(code) {
 async function calcWeeklyStats() {
   const weekDates = getCurrentWeekDates();
 
-  // Fire all three queries at the same time rather than one after another
-  const [wellbeingResult, readingResult, sleepResult] = await Promise.all([
+  // Fire alla fyra frågor parallellt för snabbast möjliga laddning
+  const [wellbeingResult, readingResult, sleepResult, exercisesResult] = await Promise.all([
     db.from('wellbeing').select('*').in('date', weekDates),
     db.from('reading').select('date, pages_read').in('date', weekDates),
-    db.from('sleep').select('date, hours').in('date', weekDates)
+    db.from('sleep').select('date, hours').in('date', weekDates),
+    db.from('exercises').select('date, completions').in('date', weekDates)
   ]);
 
   // Turn each array of rows into a lookup object keyed by date
@@ -160,6 +161,13 @@ async function calcWeeklyStats() {
   const sleepLog = {};
   (sleepResult.data || []).forEach(r => { sleepLog[r.date] = parseFloat(r.hours); });
 
+  // Summera ifyllda cirklar per dag (varje rad = en övning med boolean-array)
+  const exerciseTotals = {};
+  (exercisesResult.data || []).forEach(r => {
+    const count = r.completions.filter(Boolean).length;
+    exerciseTotals[r.date] = (exerciseTotals[r.date] || 0) + count;
+  });
+
   const moods       = weekDates.map(d => wellbeing[d] ? wellbeing[d].mood       : null);
   const energies    = weekDates.map(d => wellbeing[d] ? wellbeing[d].energy     : null);
   const motivations = weekDates.map(d => wellbeing[d] ? wellbeing[d].motivation : null);
@@ -168,6 +176,11 @@ async function calcWeeklyStats() {
   const pages       = weekDates.reduce((sum, d) => sum + (readingLog[d] || 0), 0);
   const sleepValues = weekDates.map(d => sleepLog[d] !== undefined ? sleepLog[d] : null);
 
+  // Snitt övningar: räkna bara dagar som har registrerad data (ignorera null-dagar)
+  const exerciseValues = weekDates.map(d =>
+    exerciseTotals[d] !== undefined ? exerciseTotals[d] : null
+  );
+
   return {
     mood:       avg(moods),
     energy:     avg(energies),
@@ -175,6 +188,7 @@ async function calcWeeklyStats() {
     pain:       avg(pains),
     pages,
     sleep:      avg(sleepValues),
+    exercises:  avg(exerciseValues),
     weekDates
   };
 }
@@ -236,7 +250,8 @@ async function renderSummary() {
   pagesEl.textContent = stats.pages;
   pagesEl.classList.remove('no-data');
 
-  setStatCard('statSleep', stats.sleep);
+  setStatCard('statSleep',      stats.sleep);
+  setStatCard('statExercises',  stats.exercises);
 }
 
 
